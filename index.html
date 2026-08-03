@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRT Altyazı Düzenleyici & Çevirmen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        textarea { resize: none; overflow: hidden; transition: border-color 0.2s; }
+        #file-sidebar { transition: width 0.3s ease, opacity 0.3s ease; }
+
+        .file-item { transition: background 0.15s, border-color 0.15s; }
+        .file-item:hover { background: rgba(99,102,241,0.12); border-color: #6366f1; }
+        .file-item.active { background: rgba(99,102,241,0.2); border-color: #818cf8; }
+        .file-item .del-btn { opacity: 0; transition: opacity 0.15s; }
+        .file-item:hover .del-btn { opacity: 1; }
+
+        @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+        .fade-in { animation: fadeIn 0.25s ease; }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-slate-800/90 backdrop-blur-md border-b border-slate-700 py-3 px-5 shadow-lg flex flex-wrap justify-between items-center gap-3">
+        <div class="flex items-center gap-3">
+            <button id="sidebar-toggle" onclick="toggleSidebar()" title="Dosya panelini aç/kapat"
+                class="p-2 rounded-lg hover:bg-slate-700 transition text-slate-400 hover:text-slate-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+            <svg class="w-7 h-7 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/>
+            </svg>
+            <h1 class="text-lg font-bold text-indigo-400">SRT Editor & Çevirmen</h1>
+            <a href="compare.html" class="flex items-center gap-1.5 bg-slate-700/80 hover:bg-slate-700 text-slate-200 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-600/70 transition shadow-sm ml-2" title="Altyazı Karşılaştırma Sayfası">
+                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7"/>
+                </svg>
+                Karşılaştırma Yap
+            </a>
+        </div>
+
+        <div id="action-buttons" class="hidden flex-wrap gap-3 items-center">
+            <span id="global-progress" class="text-xs text-emerald-400 font-medium hidden">Çevriliyor: %0</span>
+
+            <div class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700">
+                <select id="target-lang" class="bg-transparent text-sm text-indigo-300 font-medium focus:outline-none cursor-pointer">
+                    <option value="tr" selected>Türkçe (tr)</option>
+                    <option value="en">İngilizce (en)</option>
+                    <option value="de">Almanca (de)</option>
+                    <option value="fr">Fransızca (fr)</option>
+                    <option value="es">İspanyolca (es)</option>
+                    <option value="ru">Rusça (ru)</option>
+                </select>
+                <button id="btn-translate-all" onclick="translateAll()"
+                    class="bg-violet-600 hover:bg-violet-500 text-white px-3 py-1 rounded text-sm font-medium transition flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
+                    </svg>
+                    Tümünü Çevir
+                </button>
+            </div>
+
+            <button onclick="addNewSubtitle()"
+                class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-md hover:shadow-emerald-500/20">
+                + Yeni Ekle
+            </button>
+
+            <div class="flex items-center ml-2 border border-slate-700 rounded-lg overflow-hidden bg-slate-900 focus-within:border-indigo-500 transition-colors shadow-md">
+                <input type="text" id="export-filename" value="yeni_altyazi" placeholder="Dosya adı"
+                    class="bg-transparent px-3 py-2 text-sm text-slate-200 focus:outline-none w-32 placeholder-slate-500">
+                <span class="text-slate-500 text-sm pr-2 select-none">.srt</span>
+                <button onclick="exportSRT()"
+                    class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 text-sm font-medium transition flex items-center gap-2 h-full">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    İndir
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Body: sidebar + main -->
+    <div class="flex flex-1 overflow-hidden" style="height: calc(100vh - 57px);">
+
+        <!-- File Sidebar -->
+        <aside id="file-sidebar" class="w-64 shrink-0 bg-slate-800/60 border-r border-slate-700 flex flex-col overflow-hidden">
+
+            <div class="p-3 border-b border-slate-700 flex flex-col gap-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Yüklenen Dosyalar</p>
+                <div class="flex gap-2">
+                    <input type="file" id="srt-files-input" accept=".srt" multiple class="hidden" onchange="handleFilesFromInput(event)">
+                    <input type="file" id="srt-folder-input" webkitdirectory class="hidden" onchange="handleFilesFromInput(event)">
+
+                    <button onclick="document.getElementById('srt-files-input').click()"
+                        class="flex-1 bg-slate-700 hover:bg-indigo-600 text-slate-200 hover:text-white text-xs px-2 py-1.5 rounded transition flex items-center justify-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Dosya Ekle
+                    </button>
+                    <button onclick="document.getElementById('srt-folder-input').click()"
+                        class="flex-1 bg-slate-700 hover:bg-indigo-600 text-slate-200 hover:text-white text-xs px-2 py-1.5 rounded transition flex items-center justify-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/>
+                        </svg>
+                        Klasör Ekle
+                    </button>
+                </div>
+            </div>
+
+            <div id="file-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+                <p id="no-files-msg" class="text-xs text-slate-500 text-center mt-6 px-2">
+                    Henüz dosya yüklenmedi.<br>Yukarıdaki butonları kullanın.
+                </p>
+            </div>
+
+            <div class="p-2 border-t border-slate-700">
+                <p id="file-count" class="text-xs text-slate-500 text-center"></p>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="flex-1 overflow-y-auto p-6 flex flex-col">
+
+            <div id="upload-section"
+                class="flex-1 flex flex-col justify-center items-center bg-slate-800/50 border-2 border-dashed border-slate-600 rounded-xl p-12 text-center transition-all duration-300 my-6"
+                ondragover="event.preventDefault(); this.classList.add('border-indigo-400','bg-slate-700')"
+                ondragleave="event.preventDefault(); this.classList.remove('border-indigo-400','bg-slate-700')"
+                ondrop="handleDropZone(event)">
+                <div class="bg-slate-700/50 p-4 rounded-full mb-4">
+                    <svg class="w-12 h-12 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                </div>
+                <p class="text-xl font-medium text-slate-200">SRT dosyalarınızı buraya sürükleyin</p>
+                <p class="text-sm text-slate-400 mt-2">veya sol panelden dosya / klasör ekleyin</p>
+            </div>
+
+            <div id="editor-section" class="hidden space-y-4">
+                <div class="flex justify-between items-center mb-4 bg-slate-800 p-3 rounded-lg border border-slate-700">
+                    <span id="subtitle-count" class="text-sm font-medium text-slate-300"></span>
+                    <span class="text-xs text-slate-500">* Standart altyazı kuralı gereği satırların 26 karakteri aşmaması önerilir.</span>
+                </div>
+                <div id="subtitles-container" class="space-y-4"></div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        const CHAR_LIMIT = 26;
+        let fileStore        = {};   // { relPath: { path, name, subtitles } }
+        let activeFile       = null;
+        let sidebarOpen      = true;
+        let collapsedFolders = new Set();
+
+        // ── SIDEBAR ──────────────────────────────────────────────────────
+        function toggleSidebar() {
+            const sb = document.getElementById('file-sidebar');
+            sidebarOpen = !sidebarOpen;
+            sb.style.width   = sidebarOpen ? '16rem' : '0';
+            sb.style.opacity = sidebarOpen ? '1'     : '0';
+        }
+
+        // ── DROP ZONE ────────────────────────────────────────────────────
+        async function handleDropZone(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('border-indigo-400','bg-slate-700');
+            
+            const items = e.dataTransfer.items;
+            const fileObjs = [];
+
+            if (items && items.length > 0 && items[0].webkitGetAsEntry) {
+                const entries = [];
+                for (let i = 0; i < items.length; i++) {
+                    const entry = items[i].webkitGetAsEntry();
+                    if (entry) entries.push(entry);
+                }
+                await readEntriesRecursively(entries, fileObjs);
+                if (fileObjs.length) loadFilesWithPaths(fileObjs);
+            } else {
+                const rawFiles = [...e.dataTransfer.files].filter(f => f.name.endsWith('.srt'));
+                if (rawFiles.length) {
+                    loadFilesWithPaths(rawFiles.map(f => ({ file: f, path: f.webkitRelativePath || f.name })));
+                }
+            }
+        }
+
+        async function readEntriesRecursively(entries, fileObjs) {
+            for (const entry of entries) {
+                if (entry.isFile && entry.name.endsWith('.srt')) {
+                    await new Promise((resolve) => {
+                        entry.file(f => {
+                            const relPath = entry.fullPath.startsWith('/') ? entry.fullPath.substring(1) : entry.fullPath;
+                            fileObjs.push({ file: f, path: relPath });
+                            resolve();
+                        });
+                    });
+                } else if (entry.isDirectory) {
+                    const dirReader = entry.createReader();
+                    const childEntries = await readAllDirectoryEntries(dirReader);
+                    await readEntriesRecursively(childEntries, fileObjs);
+                }
+            }
+        }
+
+        function readAllDirectoryEntries(dirReader) {
+            return new Promise((resolve) => {
+                let entries = [];
+                function readBatch() {
+                    dirReader.readEntries((results) => {
+                        if (!results.length) {
+                            resolve(entries);
+                        } else {
+                            entries = entries.concat(Array.from(results));
+                            readBatch();
+                        }
+                    }, () => resolve(entries));
+                }
+                readBatch();
+            });
+        }
+
+        // ── FILE INPUT ───────────────────────────────────────────────────
+        function handleFilesFromInput(event) {
+            const rawFiles = [...event.target.files].filter(f => f.name.endsWith('.srt'));
+            if (!rawFiles.length) return;
+            const fileObjs = rawFiles.map(f => ({
+                file: f,
+                path: f.webkitRelativePath || f.name
+            }));
+            loadFilesWithPaths(fileObjs);
+            event.target.value = '';
+        }
+
+        // ── LOAD FILES ───────────────────────────────────────────────────
+        function loadFilesWithPaths(fileObjs) {
+            let loaded = 0;
+            let firstAddedKey = null;
+
+            fileObjs.forEach(({ file, path }) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const key = path;
+                    if (!fileStore[key]) {
+                        fileStore[key] = { path: key, name: file.name, subtitles: parseSRT(e.target.result) };
+                        if (!firstAddedKey) firstAddedKey = key;
+                    }
+                    loaded++;
+                    if (loaded === fileObjs.length) {
+                        renderFileList();
+                        if (!activeFile && firstAddedKey) {
+                            switchToFile(firstAddedKey);
+                        }
+                    }
+                };
+                reader.readAsText(file, 'UTF-8');
+            });
+        }
+
+        // ── PARSE SRT ────────────────────────────────────────────────────
+        function parseSRT(data) {
+            const clean = data.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            const blocks = clean.trim().split(/\n\s*\n/);
+            const subs = [];
+            blocks.forEach(block => {
+                const lines = block.split('\n');
+                if (lines.length >= 3) {
+                    subs.push({ index: subs.length + 1, time: lines[1].trim(), text: lines.slice(2).join('\n'), suggestion: '' });
+                }
+            });
+            return subs;
+        }
+
+        // ── TREE BUILDING & SORTING ──────────────────────────────────────
+        function buildFileTree() {
+            const root = { name: '', fullPath: '', type: 'folder', children: {} };
+
+            Object.keys(fileStore).forEach(key => {
+                const entry = fileStore[key];
+                const parts = key.split('/');
+                let current = root;
+
+                for (let i = 0; i < parts.length; i++) {
+                    const part = parts[i];
+                    const isFile = (i === parts.length - 1);
+                    const currentPath = current.fullPath ? current.fullPath + '/' + part : part;
+
+                    if (isFile) {
+                        current.children[part] = {
+                            name: part,
+                            fullPath: key,
+                            type: 'file',
+                            key: key,
+                            subtitlesCount: entry.subtitles.length
+                        };
+                    } else {
+                        if (!current.children[part]) {
+                            current.children[part] = {
+                                name: part,
+                                fullPath: currentPath,
+                                type: 'folder',
+                                children: {}
+                            };
+                        }
+                        current = current.children[part];
+                    }
+                }
+            });
+
+            return root;
+        }
+
+        function sortTree(node) {
+            if (node.type !== 'folder' || !node.children) return [];
+
+            const keys = Object.keys(node.children);
+            const list = keys.map(k => {
+                const child = node.children[k];
+                if (child.type === 'folder') {
+                    child.sortedChildren = sortTree(child);
+                }
+                return child;
+            });
+
+            list.sort((a, b) => {
+                if (a.type !== b.type) {
+                    return a.type === 'folder' ? -1 : 1;
+                }
+                return a.name.localeCompare(b.name, 'tr', { numeric: true, sensitivity: 'base' });
+            });
+
+            return list;
+        }
+
+        // ── RENDER FILE LIST ─────────────────────────────────────────────
+        function renderFileList() {
+            const list    = document.getElementById('file-list');
+            const countEl = document.getElementById('file-count');
+            list.innerHTML = '';
+
+            const keys = Object.keys(fileStore);
+            if (keys.length === 0) {
+                list.innerHTML = '<p id="no-files-msg" class="text-xs text-slate-500 text-center mt-6 px-2">Henüz dosya yüklenmedi.<br>Yukarıdaki butonları kullanın.</p>';
+                countEl.textContent = '';
+                return;
+            }
+
+            countEl.textContent = keys.length + ' dosya yüklü';
+
+            const rootTree = buildFileTree();
+            const sortedNodes = sortTree(rootTree);
+
+            const container = document.createElement('div');
+            container.className = 'space-y-1';
+
+            sortedNodes.forEach(node => renderNode(node, container, 0));
+            list.appendChild(container);
+        }
+
+        function renderNode(node, parentEl, depth) {
+            const indentPx = depth * 10 + 4; // 4px base, 10px per depth level
+
+            if (node.type === 'folder') {
+                const isCollapsed = collapsedFolders.has(node.fullPath);
+
+                const folderItem = document.createElement('div');
+                folderItem.className = 'file-item border border-slate-700/40 hover:border-slate-600 rounded-lg px-2 py-1.5 cursor-pointer flex items-center gap-1.5 text-slate-300 hover:text-slate-100 select-none bg-slate-800/40';
+                folderItem.style.paddingLeft = indentPx + 'px';
+
+                const chevronSvg = isCollapsed
+                    ? '<svg class="w-3.5 h-3.5 text-slate-500 shrink-0 transform -rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>'
+                    : '<svg class="w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
+
+                const folderIconSvg = isCollapsed
+                    ? '<svg class="w-4 h-4 text-amber-500/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>'
+                    : '<svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"/></svg>';
+
+                folderItem.innerHTML =
+                    chevronSvg +
+                    folderIconSvg +
+                    '<span class="text-xs font-semibold truncate flex-1" title="' + node.name + '">' + node.name + '</span>' +
+                    '<button class="del-btn text-slate-600 hover:text-red-400 shrink-0 p-0.5" title="Klasörü ve içeriğini kaldır">' +
+                      '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' +
+                    '</button>';
+
+                folderItem.addEventListener('click', function() {
+                    if (collapsedFolders.has(node.fullPath)) {
+                        collapsedFolders.delete(node.fullPath);
+                    } else {
+                        collapsedFolders.add(node.fullPath);
+                    }
+                    renderFileList();
+                });
+
+                folderItem.querySelector('.del-btn').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    removeFolder(node.fullPath);
+                });
+
+                parentEl.appendChild(folderItem);
+
+                if (!isCollapsed && node.sortedChildren) {
+                    const childrenContainer = document.createElement('div');
+                    childrenContainer.className = 'space-y-1 mt-0.5';
+                    node.sortedChildren.forEach(child => renderNode(child, childrenContainer, depth + 1));
+                    parentEl.appendChild(childrenContainer);
+                }
+            } else {
+                // File node
+                const isActive = node.key === activeFile;
+
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item border border-slate-700/60 rounded-lg px-2 py-1.5 cursor-pointer flex items-center gap-1.5' + (isActive ? ' active' : '');
+                fileItem.style.paddingLeft = indentPx + 'px';
+
+                const iconColor = isActive ? 'text-indigo-400' : 'text-slate-500';
+                const nameColor = isActive ? 'text-indigo-300 font-semibold' : 'text-slate-300';
+
+                fileItem.innerHTML =
+                    '<svg class="w-4 h-4 shrink-0 ' + iconColor + '" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' +
+                    '<span class="text-xs truncate flex-1 ' + nameColor + '" title="' + node.fullPath + '">' + node.name + '</span>' +
+                    '<span class="text-xs text-slate-500 shrink-0">' + node.subtitlesCount + '</span>' +
+                    '<button class="del-btn text-slate-600 hover:text-red-400 shrink-0 p-0.5" title="Dosyayı kaldır" data-key="' + node.key + '">' +
+                      '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' +
+                    '</button>';
+
+                fileItem.querySelector('.del-btn').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    removeFile(this.dataset.key);
+                });
+
+                fileItem.addEventListener('click', function() { switchToFile(node.key); });
+                parentEl.appendChild(fileItem);
+            }
+        }
+
+        // ── SWITCH FILE ───────────────────────────────────────────────────
+        function switchToFile(key) {
+            if (!fileStore[key]) return;
+            activeFile = key;
+            const entry = fileStore[key];
+            document.getElementById('export-filename').value = entry.name.replace(/\.srt$/i, '');
+            document.getElementById('upload-section').classList.add('hidden');
+            document.getElementById('editor-section').classList.remove('hidden');
+            document.getElementById('action-buttons').classList.remove('hidden');
+            document.getElementById('action-buttons').classList.add('flex');
+            renderSubtitles(entry.subtitles);
+            renderFileList();
+        }
+
+        // ── REMOVE FILE / FOLDER ──────────────────────────────────────────
+        function removeFile(key) {
+            if (!confirm('"' + key + '" dosyasını listeden kaldırmak istediğinize emin misiniz?')) return;
+            delete fileStore[key];
+            if (activeFile === key) {
+                activeFile = null;
+                const remainingKeys = Object.keys(fileStore);
+                if (remainingKeys.length > 0) {
+                    switchToFile(remainingKeys[0]);
+                } else {
+                    document.getElementById('upload-section').classList.remove('hidden');
+                    document.getElementById('editor-section').classList.add('hidden');
+                    document.getElementById('action-buttons').classList.add('hidden');
+                    document.getElementById('action-buttons').classList.remove('flex');
+                }
+            }
+            renderFileList();
+        }
+
+        function removeFolder(folderPath) {
+            if (!confirm('"' + folderPath + '" klasörünü ve içindeki tüm dosyaları listeden kaldırmak istediğinize emin misiniz?')) return;
+            const prefix = folderPath + '/';
+            const keysToRemove = Object.keys(fileStore).filter(k => k === folderPath || k.startsWith(prefix));
+            
+            keysToRemove.forEach(k => {
+                delete fileStore[k];
+                if (activeFile === k) activeFile = null;
+            });
+
+            const remainingKeys = Object.keys(fileStore);
+            if (!activeFile && remainingKeys.length > 0) {
+                switchToFile(remainingKeys[0]);
+            } else if (remainingKeys.length === 0) {
+                document.getElementById('upload-section').classList.remove('hidden');
+                document.getElementById('editor-section').classList.add('hidden');
+                document.getElementById('action-buttons').classList.add('hidden');
+                document.getElementById('action-buttons').classList.remove('flex');
+            }
+            renderFileList();
+        }
+
+        // ── HELPERS ───────────────────────────────────────────────────────
+        function getActiveSubtitles() {
+            return activeFile && fileStore[activeFile] ? fileStore[activeFile].subtitles : [];
+        }
+
+        function getLineStats(line) {
+            const charCount = line.length;
+            const wordCount = line.trim() ? line.trim().split(/\s+/).length : 0;
+            return { charCount, wordCount };
+        }
+
+        function autoResizeTextarea(el) {
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
+        }
+
+        function generateLineStatsHTML(lines) {
+            return lines.map(function(line, i) {
+                const s = getLineStats(line);
+                const over = s.charCount > CHAR_LIMIT;
+                const warn = over ? '<svg class="w-4 h-4 text-red-400 inline ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>' : '';
+                return '<div class="flex justify-between items-center text-xs text-slate-400 bg-slate-900/50 px-2 py-1.5 rounded border ' + (over ? 'border-red-900/50 bg-red-900/10' : 'border-slate-800') + '">' +
+                    '<span class="text-slate-300 truncate max-w-[250px]">Satır ' + (i+1) + ' ' + warn + '</span>' +
+                    '<div class="flex gap-3 shrink-0">' +
+                        '<span class="' + (over ? 'text-red-300' : '') + '">Karakter: <strong class="' + (over ? 'text-red-400 font-bold' : 'text-slate-200') + '">' + s.charCount + '</strong></span>' +
+                        '<span>Kelime: <strong class="text-slate-200">' + s.wordCount + '</strong></span>' +
+                    '</div></div>';
+            }).join('');
+        }
+
+        // ── GRAMMAR & PUNCTUATION CHECKER ─────────────────────────────────
+        function checkGrammarIssues(text, crossBlockWarning) {
+            const issues = [];
+
+            if (crossBlockWarning) {
+                issues.push({ message: crossBlockWarning });
+            }
+
+            if (!text || !text.trim()) return issues;
+
+            const lines = text.split(/\r?\n/);
+
+            // A. Inline checks (her satır için ayrı ayrı)
+            lines.forEach(function(line) {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+
+                // 1. Noktadan (. ! ?) ve üç noktadan (...) sonra küçük harf (Örn: "Merhaba. nasılsın?")
+                const sentenceEndRegex = /([.!?]+)\s+([a-zçğıöşü])/g;
+                let match;
+                while ((match = sentenceEndRegex.exec(line)) !== null) {
+                    const punct = match[1];
+                    const snippetStart = Math.max(0, match.index - 12);
+                    const snippetEnd = Math.min(line.length, match.index + match[0].length + 12);
+                    const snippet = line.substring(snippetStart, snippetEnd);
+                    issues.push({
+                        message: `Noktalama işaretinden (${punct}) sonra küçük harfle başlanmış: "...${snippet.trim()}..."`
+                    });
+                }
+
+                // 2. Virgülden (, ;) sonra büyük harf (Örn: "Gittim, Geldim")
+                const commaRegex = /([,;])\s+([A-ZÇĞİÖŞÜ])/g;
+                while ((match = commaRegex.exec(line)) !== null) {
+                    const punct = match[1];
+                    const snippetStart = Math.max(0, match.index - 12);
+                    const snippetEnd = Math.min(line.length, match.index + match[0].length + 12);
+                    const snippet = line.substring(snippetStart, snippetEnd);
+                    issues.push({
+                        message: `Virgülden (${punct}) sonra büyük harfle başlanmış: "...${snippet.trim()}..."`
+                    });
+                }
+
+                // 3. Noktadan (. ! ? ...) veya virgülden (, ;) sonra boşluk bırakılmaması (Örn: "Merhaba.Nasılsın", "Gittim,geldim")
+                const noSpaceRegex = /(\.{3}|[!?]|(?<!\.)\.(?!\.)|[,;])([a-zA-ZçğıöşüÇĞİÖŞÜ])/g;
+                while ((match = noSpaceRegex.exec(line)) !== null) {
+                    const punct = match[1];
+                    const snippetStart = Math.max(0, match.index - 12);
+                    const snippetEnd = Math.min(line.length, match.index + match[0].length + 12);
+                    const snippet = line.substring(snippetStart, snippetEnd);
+                    issues.push({
+                        message: `Noktalama işaretinden (${punct}) sonra boşluk bırakılmamış: "...${snippet.trim()}..."`
+                    });
+                }
+            });
+
+            // B. Multi-line / Dialogue Line Continuity (Konuşma Satırı Geçişleri)
+            for (let i = 0; i < lines.length - 1; i++) {
+                const currLine = lines[i].trim();
+                const nextLine = lines[i + 1].trim();
+
+                if (!currLine || !nextLine) continue;
+
+                // Dialogue prefix cleaner (removes leading "-", "—", "–", etc.)
+                const cleanedNext = nextLine.replace(/^[-—–\s]+/, '').trim();
+                if (!cleanedNext) continue;
+
+                const firstCharNext = cleanedNext.charAt(0);
+                const lastCharCurr = currLine.slice(-1);
+
+                // Satır sonu nokta (. ! ?) + Alt konuşma satırı küçük harf
+                if (/[.!?]/.test(lastCharCurr) && /[a-zçğıöşü]/.test(firstCharNext)) {
+                    issues.push({
+                        message: `Konuşma satırı sonunda (${lastCharCurr}) sonrası alt satıra küçük harfle başlanmış: "${currLine}" ➔ "${nextLine}"`
+                    });
+                }
+
+                // Satır sonu virgül (, ;) + Alt konuşma satırı büyük harf
+                if (/[,;]/.test(lastCharCurr) && /[A-ZÇĞİÖŞÜ]/.test(firstCharNext)) {
+                    issues.push({
+                        message: `Konuşma satırı sonunda (${lastCharCurr}) sonrası alt satıra büyük harfle başlanmış: "${currLine}" ➔ "${nextLine}"`
+                    });
+                }
+            }
+
+            // Deduplicate by message string
+            const uniqueMap = new Map();
+            issues.forEach(item => uniqueMap.set(item.message, item));
+            return Array.from(uniqueMap.values());
+        }
+
+        function generateGrammarWarningsHTML(text, crossBlockWarning) {
+            const issues = checkGrammarIssues(text, crossBlockWarning);
+            if (issues.length === 0) return '';
+
+            const itemsHTML = issues.map(iss => 
+                `<li class="flex items-start gap-1.5 leading-relaxed">` +
+                    `<span class="text-amber-400 font-bold shrink-0">•</span>` +
+                    `<span>${iss.message}</span>` +
+                `</li>`
+            ).join('');
+
+            return `<div class="bg-amber-950/40 border border-amber-800/60 rounded-lg p-2.5 text-xs text-amber-200/90 space-y-1.5 mt-2 fade-in">` +
+                `<div class="flex items-center gap-1.5 font-semibold text-amber-400">` +
+                    `<svg class="w-4 h-4 shrink-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">` +
+                        `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>` +
+                    `</svg>` +
+                    `<span>İmla ve Noktalama Uyarısı (${issues.length})</span>` +
+                `</div>` +
+                `<ul class="space-y-1 text-slate-300 font-sans text-xs pl-0.5">${itemsHTML}</ul>` +
+            `</div>`;
+        }
+
+        function checkCrossBlockWarnings(subtitles) {
+            const warnings = {}; // idx -> warning string
+            for (let i = 0; i < subtitles.length - 1; i++) {
+                const currText = subtitles[i].text.trim();
+                const nextText = subtitles[i + 1].text.trim();
+                if (!currText || !nextText) continue;
+
+                const lastCharCurr = currText.slice(-1);
+                const cleanedNext = nextText.replace(/^[-—–\s]+/, '').trim();
+                if (!cleanedNext) continue;
+
+                const firstCharNext = cleanedNext.charAt(0);
+
+                if (/[.!?]/.test(lastCharCurr) && /[a-zçğıöşü]/.test(firstCharNext)) {
+                    warnings[i + 1] = `Bir önceki altyazı bloğu (#${subtitles[i].index}) noktalama işareti (${lastCharCurr}) ile bittiği halde bu blok küçük harfle başlamış.`;
+                } else if (/[,;]/.test(lastCharCurr) && /[A-ZÇĞİÖŞÜ]/.test(firstCharNext)) {
+                    warnings[i + 1] = `Bir önceki altyazı bloğu (#${subtitles[i].index}) virgül (${lastCharCurr}) ile bittiği halde bu blok büyük harfle başlamış.`;
+                }
+            }
+            return warnings;
+        }
+
+        // ── RENDER SUBTITLES ──────────────────────────────────────────────
+        function renderSubtitles(subtitles) {
+            const container = document.getElementById('subtitles-container');
+            container.innerHTML = '';
+            document.getElementById('subtitle-count').innerHTML =
+                'Toplam <strong class="text-indigo-400">' + subtitles.length + '</strong> altyazı bloğu &mdash; <span class="text-slate-400">' + (activeFile || '') + '</span>';
+
+            const crossWarnings = checkCrossBlockWarnings(subtitles);
+
+            subtitles.forEach(function(sub, idx) {
+                const card = document.createElement('div');
+                card.id = 'sub-card-' + idx;
+                card.className = 'bg-slate-800 border border-slate-700 rounded-xl p-4 flex gap-4 items-start shadow-sm focus-within:border-indigo-500/50 transition-colors duration-200 fade-in';
+
+                card.innerHTML =
+                    '<div class="flex flex-col gap-2 w-20 shrink-0 items-center justify-center pt-2">' +
+                        '<span class="text-sm font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded-md w-full text-center">#' + sub.index + '</span>' +
+                        '<button onclick="deleteSubtitle(' + idx + ')" class="text-red-400 hover:text-red-300 text-xs transition mt-2 flex items-center gap-1" title="Bu bloğu sil">' +
+                            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
+                        '</button>' +
+                    '</div>' +
+                    '<div class="flex-1 space-y-3">' +
+                        '<div class="flex flex-wrap gap-2 items-center">' +
+                            '<input type="text" value="' + sub.time + '" onchange="updateTime(' + idx + ', this.value)" ' +
+                                'class="flex-1 min-w-[200px] bg-slate-900 border border-slate-700 rounded px-3 py-1.5 text-sm text-indigo-300 font-mono focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">' +
+                            '<button onclick="fetchSuggestion(' + idx + ')" id="trans-btn-' + idx + '" class="bg-violet-600/80 hover:bg-violet-500 text-white px-3 py-1.5 rounded text-xs font-medium transition shrink-0 flex items-center gap-1">' +
+                                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>' +
+                                'Tekil Çeviri</button>' +
+                        '</div>' +
+                        '<textarea id="textarea-' + idx + '" rows="2" oninput="handleTextChange(' + idx + ', this)" ' +
+                            'class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-base text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">' + sub.text + '</textarea>' +
+                        '<div id="suggestion-box-' + idx + '" class="' + (sub.suggestion ? '' : 'hidden') + ' bg-violet-900/20 border border-violet-800/50 rounded-lg p-3 space-y-2 relative overflow-hidden">' +
+                            '<div class="absolute top-0 left-0 w-1 h-full bg-violet-500"></div>' +
+                            '<div class="flex justify-between items-center text-xs pl-2">' +
+                                '<span class="font-semibold text-violet-400">✨ AI Önerisi</span>' +
+                                '<button onclick="applySuggestion(' + idx + ')" class="bg-violet-600 hover:bg-violet-500 text-white px-3 py-1 rounded transition font-medium">Metne Uygula</button>' +
+                            '</div>' +
+                            '<p id="suggestion-text-' + idx + '" class="text-sm text-violet-200 italic pl-2">' + sub.suggestion + '</p>' +
+                        '</div>' +
+                        '<span id="trans-status-' + idx + '" class="text-xs text-violet-400 font-medium block h-4"></span>' +
+                        '<div id="line-stats-' + idx + '" class="space-y-1.5 pt-1 border-t border-slate-700/50">' +
+                            generateLineStatsHTML(sub.text.split('\n')) +
+                        '</div>' +
+                        '<div id="grammar-box-' + idx + '">' +
+                            generateGrammarWarningsHTML(sub.text, crossWarnings[idx]) +
+                        '</div>' +
+                    '</div>';
+
+                container.appendChild(card);
+                setTimeout(function() { autoResizeTextarea(card.querySelector('#textarea-' + idx)); }, 0);
+            });
+        }
+
+        // ── SUBTITLE OPS ──────────────────────────────────────────────────
+        function updateTime(index, value) { getActiveSubtitles()[index].time = value; }
+
+        function handleTextChange(index, textarea) {
+            getActiveSubtitles()[index].text = textarea.value;
+            autoResizeTextarea(textarea);
+            updateLineStatsUI(index);
+        }
+
+        function updateLineStatsUI(index) {
+            const subs = getActiveSubtitles();
+            const text = subs[index].text;
+            document.getElementById('line-stats-' + index).innerHTML =
+                generateLineStatsHTML(text.split('\n'));
+
+            const crossWarnings = checkCrossBlockWarnings(subs);
+            document.getElementById('grammar-box-' + index).innerHTML =
+                generateGrammarWarningsHTML(text, crossWarnings[index]);
+
+            if (index + 1 < subs.length) {
+                const nextBox = document.getElementById('grammar-box-' + (index + 1));
+                if (nextBox) {
+                    nextBox.innerHTML = generateGrammarWarningsHTML(subs[index + 1].text, crossWarnings[index + 1]);
+                }
+            }
+        }
+
+        function addNewSubtitle() {
+            var subs = getActiveSubtitles();
+            var newTime = "00:00:00,000 --> 00:00:02,000";
+            if (subs.length > 0) {
+                var parts = subs[subs.length-1].time.split('-->');
+                if (parts.length === 2) newTime = parts[1].trim() + ' --> 00:00:00,000';
+            }
+            subs.push({ index: subs.length + 1, time: newTime, text: '', suggestion: '' });
+            renderSubtitles(subs);
+            setTimeout(function() {
+                var last = document.getElementById('sub-card-' + (subs.length-1));
+                if (last) last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+
+        function deleteSubtitle(index) {
+            if (!confirm('Bu altyazı bloğunu silmek istediğinize emin misiniz?')) return;
+            var subs = getActiveSubtitles();
+            subs.splice(index, 1);
+            subs.forEach(function(s,i) { s.index = i+1; });
+            renderSubtitles(subs);
+        }
+
+        function applySuggestion(index) {
+            var subs = getActiveSubtitles();
+            var ta = document.getElementById('textarea-' + index);
+            subs[index].text = subs[index].suggestion;
+            ta.value = subs[index].text;
+            subs[index].suggestion = '';
+            document.getElementById('suggestion-box-' + index).classList.add('hidden');
+            autoResizeTextarea(ta);
+            updateLineStatsUI(index);
+            ta.classList.add('ring-2','ring-emerald-500');
+            setTimeout(function() { ta.classList.remove('ring-2','ring-emerald-500'); }, 500);
+        }
+
+        // ── TRANSLATION ───────────────────────────────────────────────────
+        async function fetchSuggestion(index) {
+            var subs = getActiveSubtitles();
+            var text = subs[index].text;
+            if (!text.trim()) return;
+            var lang   = document.getElementById('target-lang').value;
+            var status = document.getElementById('trans-status-' + index);
+            var btn    = document.getElementById('trans-btn-' + index);
+            status.innerHTML = '<span class="animate-pulse">Çevriliyor...</span>';
+            btn.disabled = true;
+            btn.classList.add('opacity-50','cursor-not-allowed');
+            try {
+                var resp = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=autodetect|' + lang);
+                var data = await resp.json();
+                if (data && data.responseData && data.responseData.translatedText) {
+                    subs[index].suggestion = data.responseData.translatedText;
+                    document.getElementById('suggestion-text-' + index).innerText = subs[index].suggestion;
+                    document.getElementById('suggestion-box-' + index).classList.remove('hidden');
+                    status.innerText = '✓ Tamamlandı';
+                    setTimeout(function() { status.innerText = ''; }, 3000);
+                } else {
+                    status.innerHTML = "<span class='text-red-400'>Hata oluştu.</span>";
+                }
+            } catch(err) {
+                status.innerHTML = "<span class='text-red-400'>Bağlantı hatası!</span>";
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50','cursor-not-allowed');
+            }
+        }
+
+        async function translateAll() {
+            var subs = getActiveSubtitles();
+            var lang = document.getElementById('target-lang').value;
+            var btn  = document.getElementById('btn-translate-all');
+            var prog = document.getElementById('global-progress');
+            if (!confirm('Tüm altyazılar çevrilecek (' + lang.toUpperCase() + '). Onaylıyor musunuz?')) return;
+            btn.disabled = true; btn.classList.add('opacity-50','cursor-not-allowed');
+            prog.classList.remove('hidden');
+            var total = subs.length, done = 0;
+            for (var i = 0; i < total; i++) {
+                if (subs[i].text.trim()) {
+                    document.getElementById('trans-status-' + i).innerText = 'Sıra bekliyor...';
+                    await fetchSuggestion(i);
+                    await new Promise(function(r) { setTimeout(r, 800); });
+                }
+                done++;
+                prog.innerText = 'Çevriliyor: %' + Math.round((done/total)*100);
+            }
+            prog.innerText = 'Çeviri Tamamlandı!';
+            setTimeout(function() { prog.classList.add('hidden'); }, 4000);
+            btn.disabled = false; btn.classList.remove('opacity-50','cursor-not-allowed');
+            alert('Toplu çeviri tamamlandı!');
+        }
+
+        // ── EXPORT ────────────────────────────────────────────────────────
+        function collectFileWarnings(subs) {
+            let charLimitWarningsCount = 0;
+            let grammarWarningsCount = 0;
+            const crossWarnings = checkCrossBlockWarnings(subs);
+
+            subs.forEach(function(sub, idx) {
+                const lines = sub.text.split('\n');
+                lines.forEach(function(line) {
+                    if (line.length > CHAR_LIMIT) {
+                        charLimitWarningsCount++;
+                    }
+                });
+
+                const grammarIssues = checkGrammarIssues(sub.text, crossWarnings[idx]);
+                if (grammarIssues.length > 0) {
+                    grammarWarningsCount += grammarIssues.length;
+                }
+            });
+
+            return { charLimitWarningsCount, grammarWarningsCount, total: charLimitWarningsCount + grammarWarningsCount };
+        }
+
+        function exportSRT() {
+            var subs = getActiveSubtitles();
+            if (!subs.length) return;
+
+            var warnStats = collectFileWarnings(subs);
+            if (warnStats.total > 0) {
+                var confirmMsg = '⚠️ Bu altyazı dosyasında tespit edilen uyarılar / hatalar bulunmaktadır:\n';
+                if (warnStats.charLimitWarningsCount > 0) {
+                    confirmMsg += ' • ' + warnStats.charLimitWarningsCount + ' satırda karakter sınırı (26 karakter) aşıldı.\n';
+                }
+                if (warnStats.grammarWarningsCount > 0) {
+                    confirmMsg += ' • ' + warnStats.grammarWarningsCount + ' adet imla / noktalama uyarısı mevcut.\n';
+                }
+                confirmMsg += '\nYine de dosyayı indirmek istiyor musunuz?';
+
+                if (!confirm(confirmMsg)) {
+                    return;
+                }
+            }
+
+            var content = subs.map(function(s,i) { return (i+1) + '\n' + s.time + '\n' + s.text; }).join('\n\n');
+            var name = (document.getElementById('export-filename').value.trim() || 'yeni_altyazi');
+            if (!name.toLowerCase().endsWith('.srt')) name += '.srt';
+            var blob = new Blob([content], { type: 'text/srt;charset=utf-8;' });
+            var url  = URL.createObjectURL(blob);
+            var a    = document.createElement('a');
+            a.href = url; a.download = name;
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
