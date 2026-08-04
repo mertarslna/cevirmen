@@ -27,7 +27,7 @@
     </style>
 </head>
 
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+<body class="bg-slate-900 text-slate-100 h-screen overflow-hidden flex flex-col font-sans">
 
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-slate-800/90 backdrop-blur-md border-b border-slate-700 py-3 px-5 shadow-lg flex flex-wrap justify-between items-center gap-3">
@@ -74,10 +74,7 @@
                 </button>
             </div>
 
-            <button onclick="addNewSubtitle()"
-                class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-md hover:shadow-emerald-500/20">
-                + Yeni Ekle
-            </button>
+
 
             <div class="flex items-center ml-2 border border-slate-700 rounded-lg overflow-hidden bg-slate-900 focus-within:border-indigo-500 transition-colors shadow-md">
                 <input type="text" id="export-filename" value="yeni_altyazi" placeholder="Dosya adı"
@@ -96,7 +93,7 @@
     </header>
 
     <!-- Body: sidebar + main -->
-    <div class="flex flex-1 overflow-hidden" style="height: calc(100vh - 57px);">
+    <div class="flex flex-1 overflow-hidden">
 
         <!-- File Sidebar -->
         <aside id="file-sidebar" class="w-64 shrink-0 bg-slate-800/60 border-r border-slate-700 flex flex-col overflow-hidden">
@@ -667,6 +664,19 @@
                         message: `Noktalama işaretinden (${punct}) sonra boşluk bırakılmamış: "...${snippet.trim()}..."`
                     });
                 }
+                // 4. Kıvrık tek tırnak kontrolü
+                if (/[‘’´`]/.test(line)) {
+                    issues.push({
+                        message: `Tek tırnak (') yerine farklı bir tırnak işareti (kıvrık vb.) kullanılmış.`
+                    });
+                }
+
+                // 5. Kıvrık çift tırnak kontrolü
+                if (/[“”]/.test(line)) {
+                    issues.push({
+                        message: `Çift tırnak (") yerine farklı bir tırnak işareti (kıvrık vb.) kullanılmış.`
+                    });
+                }
             });
 
             // B. Multi-line / Dialogue Line Continuity (Konuşma Satırı Geçişleri)
@@ -755,6 +765,14 @@
             document.getElementById('subtitle-count').innerHTML =
                 'Toplam <strong class="text-indigo-400">' + subtitles.length + '</strong> altyazı bloğu &mdash; <span class="text-slate-400">' + (activeFile || '') + '</span>';
 
+            if (subtitles.length === 0) {
+                container.innerHTML = '<div class="text-center py-12">' +
+                    '<p class="text-slate-400 mb-4 text-sm">Bu dosyada henüz hiç altyazı yok.</p>' +
+                    '<button onclick="addNewSubtitle()" class="bg-emerald-600/80 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-md">+ İlk Altyazıyı Ekle</button>' +
+                '</div>';
+                return;
+            }
+
             const crossWarnings = checkCrossBlockWarnings(subtitles);
 
             subtitles.forEach(function(sub, idx) {
@@ -765,9 +783,14 @@
                 card.innerHTML =
                     '<div class="flex flex-col gap-2 w-20 shrink-0 items-center justify-center pt-2">' +
                         '<span class="text-sm font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded-md w-full text-center">#' + sub.index + '</span>' +
-                        '<button onclick="deleteSubtitle(' + idx + ')" class="text-red-400 hover:text-red-300 text-xs transition mt-2 flex items-center gap-1" title="Bu bloğu sil">' +
-                            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
-                        '</button>' +
+                        '<div class="flex gap-1 mt-1 w-full justify-center">' +
+                            '<button onclick="deleteSubtitle(' + idx + ')" class="text-red-400 hover:text-red-300 text-xs transition p-1 hover:bg-red-900/20 rounded" title="Bu bloğu sil">' +
+                                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
+                            '</button>' +
+                            '<button onclick="insertSubtitleAt(' + idx + ')" class="text-emerald-400 hover:text-emerald-300 text-xs transition p-1 hover:bg-emerald-900/20 rounded" title="Altına yeni satır ekle">' +
+                                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>' +
+                            '</button>' +
+                        '</div>' +
                     '</div>' +
                     '<div class="flex-1 space-y-3">' +
                         '<div class="flex flex-wrap gap-2 items-center">' +
@@ -844,7 +867,38 @@
             triggerAutoSave();
             setTimeout(function() {
                 var last = document.getElementById('sub-card-' + (subs.length-1));
-                if (last) last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (last) {
+                    last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    last.querySelector('textarea').focus();
+                }
+            }, 100);
+        }
+
+        function insertSubtitleAt(index) {
+            var subs = getActiveSubtitles();
+            var newTime = "00:00:00,000 --> 00:00:02,000";
+            if (subs[index]) {
+                var parts = subs[index].time.split('-->');
+                if (parts.length === 2) {
+                    var startTime = parts[1].trim();
+                    var endTime = "00:00:00,000";
+                    if (index + 1 < subs.length) {
+                        var nextParts = subs[index + 1].time.split('-->');
+                        if (nextParts.length > 0) endTime = nextParts[0].trim();
+                    }
+                    newTime = startTime + ' --> ' + endTime;
+                }
+            }
+            subs.splice(index + 1, 0, { index: 0, time: newTime, text: '', suggestion: '' });
+            subs.forEach(function(s,i) { s.index = i+1; });
+            renderSubtitles(subs);
+            triggerAutoSave();
+            setTimeout(function() {
+                var newCard = document.getElementById('sub-card-' + (index + 1));
+                if (newCard) {
+                    newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    newCard.querySelector('textarea').focus();
+                }
             }, 100);
         }
 
