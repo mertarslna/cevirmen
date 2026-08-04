@@ -8,249 +8,536 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="storage.js"></script>
     <style>
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
 
-        @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-        .fade-in { animation: fadeIn 0.25s ease; }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        #file-sidebar {
+            transition: width 0.3s ease, opacity 0.3s ease;
+        }
+
+        .file-item {
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .file-item:hover {
+            background: rgba(99, 102, 241, 0.12);
+            border-color: #6366f1;
+        }
+
+        .file-item.active-orig {
+            background: rgba(79, 70, 229, 0.2);
+            border-color: #6366f1;
+        }
+
+        .file-item.active-trans {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: #8b5cf6;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.25s ease;
+        }
     </style>
 </head>
 
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+<body class="bg-slate-900 text-slate-100 h-screen overflow-hidden flex flex-col font-sans">
 
     <!-- Header -->
-    <header class="sticky top-0 z-50 bg-slate-800/90 backdrop-blur-md border-b border-slate-700 py-3 px-5 shadow-lg flex flex-wrap justify-between items-center gap-3">
+    <header
+        class="sticky top-0 z-50 bg-slate-800/90 backdrop-blur-md border-b border-slate-700 py-3 px-5 shadow-lg flex flex-wrap justify-between items-center gap-3">
         <div class="flex items-center gap-3">
-            <a href="index.html" class="p-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 transition text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-medium border border-slate-600/50" title="Editöre Dön">
+            <button id="sidebar-toggle" onclick="toggleSidebar()" title="Dosya panelini aç/kapat"
+                class="p-2 rounded-lg hover:bg-slate-700 transition text-slate-400 hover:text-slate-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            <a href="index.html"
+                class="p-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 transition text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-medium border border-slate-600/50 ml-2"
+                title="Editöre Dön">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
                 Editöre Dön
             </a>
-            <svg class="w-7 h-7 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7"/>
-            </svg>
-            <h1 class="text-lg font-bold text-indigo-400">SRT Karşılaştırma & Zaman Kontrolü</h1>
         </div>
-
         <div id="stats-summary" class="hidden flex items-center gap-3 text-xs">
-            <span class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300">
-                Orijinal: <strong id="orig-count" class="text-indigo-400">0</strong>
-            </span>
-            <span class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300">
-                Çeviri: <strong id="trans-count" class="text-indigo-400">0</strong>
-            </span>
-            <span id="issue-badge-summary" class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300">
-                Sorunlu Blok: <strong id="issue-count" class="text-emerald-400">0</strong>
-            </span>
+            <span class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300">Orijinal: <strong
+                    id="orig-count" class="text-indigo-400">0</strong></span>
+            <span class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300">Çeviri: <strong
+                    id="trans-count" class="text-indigo-400">0</strong></span>
+            <span id="issue-badge-summary"
+                class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300">Sorunlu Blok: <strong
+                    id="issue-count" class="text-emerald-400">0</strong></span>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full space-y-6">
+    <div class="flex flex-1 overflow-hidden">
 
-        <!-- File Upload Section -->
-        <div id="upload-section" class="grid md:grid-cols-2 gap-6">
-            
-            <!-- Original File Drop Zone -->
-            <div id="drop-orig"
-                class="bg-slate-800/60 border-2 border-dashed border-slate-600 rounded-xl p-8 text-center hover:border-indigo-400 transition-colors flex flex-col justify-center items-center gap-3 cursor-pointer"
-                onclick="document.getElementById('input-orig').click()"
-                ondragover="event.preventDefault(); this.classList.add('border-indigo-400','bg-slate-700/50')"
-                ondragleave="event.preventDefault(); this.classList.remove('border-indigo-400','bg-slate-700/50')"
-                ondrop="handleDrop(event, 'orig')">
-                
-                <input type="file" id="input-orig" accept=".srt" class="hidden" onchange="handleFileInput(event, 'orig')">
-                <div class="bg-indigo-950/50 p-3 rounded-full text-indigo-400">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                    </svg>
+        <!-- Sidebar -->
+        <aside id="file-sidebar"
+            class="w-72 shrink-0 bg-slate-800/60 border-r border-slate-700 flex flex-col overflow-hidden">
+            <div class="p-3 border-b border-slate-700 flex flex-col gap-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Karşılaştırma Dosyaları</p>
+                <div class="flex gap-2">
+                    <input type="file" id="srt-files-input" accept=".srt" multiple class="hidden"
+                        onchange="handleFilesFromInput(event)">
+                    <input type="file" id="srt-folder-input" webkitdirectory class="hidden"
+                        onchange="handleFilesFromInput(event)">
+                    <button onclick="document.getElementById('srt-files-input').click()"
+                        class="flex-1 bg-slate-700 hover:bg-indigo-600 text-slate-200 hover:text-white text-xs px-2 py-1.5 rounded transition flex items-center justify-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Dosya
+                    </button>
+                    <button onclick="document.getElementById('srt-folder-input').click()"
+                        class="flex-1 bg-slate-700 hover:bg-indigo-600 text-slate-200 hover:text-white text-xs px-2 py-1.5 rounded transition flex items-center justify-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                        </svg>
+                        Klasör
+                    </button>
                 </div>
-                <div>
-                    <p class="font-semibold text-slate-200">1. Orijinal Altyazı Dosyası (SRT)</p>
-                    <p class="text-xs text-slate-400 mt-1">İngilizce / Kaynak dosya (sürükleyin veya tıklayın)</p>
+            </div>
+            <div id="file-list" class="flex-1 overflow-y-auto p-2 space-y-1 pb-16">
+                <p class="text-xs text-slate-500 text-center mt-6 px-2">Dosyalarınızı sürükleyin veya yukarıdan ekleyin.
+                </p>
+            </div>
+            <div
+                class="p-2 border-t border-slate-700 flex justify-between items-center text-xs px-3 bg-slate-800/90 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+                <p id="file-count" class="text-slate-500"></p>
+                <button onclick="clearAllDataPrompt()"
+                    class="text-slate-500 hover:text-red-400 transition underline underline-offset-2">Temizle</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-6 flex flex-col relative" id="main-dropzone"
+            ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+
+            <div id="drop-overlay"
+                class="absolute inset-0 bg-indigo-500/10 border-4 border-dashed border-indigo-500/50 rounded-2xl m-4 z-10 hidden flex-col justify-center items-center backdrop-blur-sm transition-all pointer-events-none">
+                <svg class="w-16 h-16 text-indigo-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p class="text-xl font-bold text-indigo-300">Dosyaları Buraya Bırakın</p>
+            </div>
+
+            <!-- Selection Summary -->
+            <div id="selection-summary"
+                class="bg-slate-800/80 border border-slate-700 p-4 rounded-xl mb-6 flex flex-col md:flex-row items-center gap-4 justify-between shadow-sm shrink-0">
+                <div class="flex-1 w-full bg-indigo-950/30 border border-indigo-900/50 rounded-lg p-3 flex flex-col">
+                    <div class="flex items-center gap-1.5 mb-1 text-indigo-400">
+                        <span class="bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">O</span>
+                        <p class="text-xs font-semibold">Orijinal (Kaynak) Dosya</p>
+                    </div>
+                    <p id="summary-orig-name" class="text-sm text-slate-300 truncate font-mono">Seçilmedi</p>
                 </div>
-                <span id="name-orig" class="text-xs font-mono text-indigo-300 bg-indigo-950/80 px-2.5 py-1 rounded border border-indigo-800/50 hidden"></span>
-                <div id="quick-select-orig-container" class="hidden mt-2 text-xs w-full" onclick="event.stopPropagation()">
-                    <span class="text-slate-400 block mb-1 font-medium">veya Editördeki Dosyalardan Seç:</span>
-                    <select id="select-orig" onchange="selectFromEditor(this.value, 'orig')" class="bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-indigo-300 w-full focus:outline-none focus:border-indigo-500">
-                        <option value="">-- Editördeki Yüklü Dosyalardan Seç --</option>
-                    </select>
+                <div class="flex-1 w-full bg-violet-950/30 border border-violet-900/50 rounded-lg p-3 flex flex-col">
+                    <div class="flex items-center gap-1.5 mb-1 text-violet-400">
+                        <span class="bg-violet-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Ç</span>
+                        <p class="text-xs font-semibold">Çeviri (Hedef) Dosya</p>
+                    </div>
+                    <p id="summary-trans-name" class="text-sm text-slate-300 truncate font-mono">Seçilmedi</p>
+                </div>
+                <div class="shrink-0 pt-2 md:pt-0">
+                    <button id="btn-compare" onclick="checkAndRenderComparison()" disabled
+                        class="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:border-slate-700 border border-indigo-500/30 text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm disabled:cursor-not-allowed h-full">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7" />
+                        </svg>
+                        Karşılaştır
+                    </button>
                 </div>
             </div>
 
-            <!-- Translated File Drop Zone -->
-            <div id="drop-trans"
-                class="bg-slate-800/60 border-2 border-dashed border-slate-600 rounded-xl p-8 text-center hover:border-violet-400 transition-colors flex flex-col justify-center items-center gap-3 cursor-pointer"
-                onclick="document.getElementById('input-trans').click()"
-                ondragover="event.preventDefault(); this.classList.add('border-violet-400','bg-slate-700/50')"
-                ondragleave="event.preventDefault(); this.classList.remove('border-violet-400','bg-slate-700/50')"
-                ondrop="handleDrop(event, 'trans')">
-                
-                <input type="file" id="input-trans" accept=".srt" class="hidden" onchange="handleFileInput(event, 'trans')">
-                <div class="bg-violet-950/50 p-3 rounded-full text-violet-400">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                    </svg>
-                </div>
-                <div>
-                    <p class="font-semibold text-slate-200">2. Çeviri Altyazı Dosyası (SRT)</p>
-                    <p class="text-xs text-slate-400 mt-1">Tamamlanan Türkçe çeviri dosya (sürükleyin veya tıklayın)</p>
-                </div>
-                <span id="name-trans" class="text-xs font-mono text-violet-300 bg-violet-950/80 px-2.5 py-1 rounded border border-violet-800/50 hidden"></span>
-                <div id="quick-select-trans-container" class="hidden mt-2 text-xs w-full" onclick="event.stopPropagation()">
-                    <span class="text-slate-400 block mb-1 font-medium">veya Editördeki Dosyalardan Seç:</span>
-                    <select id="select-trans" onchange="selectFromEditor(this.value, 'trans')" class="bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-violet-300 w-full focus:outline-none focus:border-violet-500">
-                        <option value="">-- Editördeki Yüklü Dosyalardan Seç --</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Compare Button -->
-            <div class="md:col-span-2 flex flex-col items-center justify-center pt-2 gap-2">
-                <button id="btn-compare" onclick="checkAndRenderComparison()" disabled
-                    class="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:border-slate-700 border border-indigo-500/30 text-white font-semibold px-8 py-3.5 rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm disabled:cursor-not-allowed">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7"/>
-                    </svg>
-                    Altyazıları Karşılaştır
-                </button>
-                <p id="btn-compare-tip" class="text-xs text-slate-500">Karşılaştırma için lütfen her iki SRT dosyasını da yükleyin.</p>
-            </div>
-
-        </div>
-
-        <!-- Comparison Dashboard & Toolbar -->
-        <div id="comparison-dashboard" class="hidden space-y-4">
-            
-            <!-- Global Block Count Warning Banner -->
-            <div id="block-mismatch-banner" class="hidden bg-amber-950/40 border border-amber-800/80 rounded-xl p-4 flex items-center justify-between gap-4 text-amber-200">
-                <div class="flex items-center gap-3">
+            <!-- Comparison Dashboard -->
+            <div id="comparison-dashboard" class="hidden flex-col gap-4">
+                <div id="block-mismatch-banner"
+                    class="hidden bg-amber-950/40 border border-amber-800/80 rounded-xl p-4 flex items-center gap-3 text-amber-200 shrink-0">
                     <svg class="w-6 h-6 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                     <div>
                         <p class="font-semibold text-amber-300 text-sm">Blok Sayısı Uyuşmazlığı Tespit Edildi!</p>
                         <p id="block-mismatch-text" class="text-xs text-amber-200/80 mt-0.5"></p>
                     </div>
                 </div>
-            </div>
 
-            <!-- Toolbar & Filter Tabs -->
-            <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-800 p-3 rounded-xl border border-slate-700">
-                
-                <!-- Filter Tabs -->
-                <div class="flex items-center gap-2 bg-slate-900 p-1 rounded-lg border border-slate-700/80">
-                    <button id="tab-all" onclick="setFilter('all')"
-                        class="px-3 py-1.5 rounded-md text-xs font-medium transition bg-indigo-600 text-white shadow">
-                        Tüm Altyazılar (<span id="count-all">0</span>)
-                    </button>
-                    <button id="tab-issues" onclick="setFilter('issues')"
-                        class="px-3 py-1.5 rounded-md text-xs font-medium transition text-slate-400 hover:text-slate-200">
-                        ⚠️ Sadece Sorunlu Çeviriler (<span id="count-issues">0</span>)
-                    </button>
-                </div>
-
-                <!-- Search & Reset -->
-                <div class="flex items-center gap-3">
+                <div
+                    class="flex flex-wrap items-center justify-between gap-3 bg-slate-800 p-3 rounded-xl border border-slate-700 shrink-0">
+                    <div class="flex items-center gap-2 bg-slate-900 p-1 rounded-lg border border-slate-700/80">
+                        <button id="tab-all" onclick="setFilter('all')"
+                            class="px-3 py-1.5 rounded-md text-xs font-medium transition bg-indigo-600 text-white shadow">Tüm
+                            Altyazılar (<span id="count-all">0</span>)</button>
+                        <button id="tab-issues" onclick="setFilter('issues')"
+                            class="px-3 py-1.5 rounded-md text-xs font-medium transition text-slate-400 hover:text-slate-200">⚠️
+                            Sadece Sorunlu Çeviriler (<span id="count-issues">0</span>)</button>
+                    </div>
                     <div class="relative">
-                        <input type="text" id="search-input" oninput="renderComparisonList()" placeholder="Metin veya blok ara..."
+                        <input type="text" id="search-input" oninput="renderComparisonList()"
+                            placeholder="Metin veya blok ara..."
                             class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 w-48 pl-8">
-                        <svg class="w-4 h-4 text-slate-500 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        <svg class="w-4 h-4 text-slate-500 absolute left-2.5 top-2" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </div>
-
-                    <button onclick="resetFiles()" class="text-xs text-slate-400 hover:text-red-400 transition flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                        </svg>
-                        Sıfırla
-                    </button>
                 </div>
+
+                <div id="comparison-list" class="space-y-4"></div>
             </div>
 
-            <!-- Comparison Cards List -->
-            <div id="comparison-list" class="space-y-4"></div>
-
-        </div>
-
-    </main>
+        </main>
+    </div>
 
     <script>
+        let fileStore = {};
+        let collapsedFolders = new Set();
+        let sidebarOpen = true;
+
+        let origFileKey = null;
+        let transFileKey = null;
         let origBlocks = [];
         let transBlocks = [];
         let activeFilter = 'all';
+        let comparisonActive = false;
 
-        // ── FILE DROP & INPUT ─────────────────────────────────────────────
-        function handleDrop(e, type) {
+        // ── SIDEBAR & UI ──────────────────────────────────────────────────
+        function toggleSidebar() {
+            const sb = document.getElementById('file-sidebar');
+            sidebarOpen = !sidebarOpen;
+            sb.style.width = sidebarOpen ? '18rem' : '0';
+            sb.style.opacity = sidebarOpen ? '1' : '0';
+        }
+
+        function handleDragOver(e) {
             e.preventDefault();
-            const file = e.dataTransfer.files[0];
-            if (file && file.name.endsWith('.srt')) processFile(file, type);
+            document.getElementById('drop-overlay').classList.remove('hidden');
+            document.getElementById('drop-overlay').classList.add('flex');
+        }
+        function handleDragLeave(e) {
+            e.preventDefault();
+            document.getElementById('drop-overlay').classList.add('hidden');
+            document.getElementById('drop-overlay').classList.remove('flex');
         }
 
-        function handleFileInput(e, type) {
-            const file = e.target.files[0];
-            if (file && file.name.endsWith('.srt')) processFile(file, type);
-            e.target.value = '';
-        }
+        async function handleDrop(e) {
+            e.preventDefault();
+            document.getElementById('drop-overlay').classList.add('hidden');
+            document.getElementById('drop-overlay').classList.remove('flex');
 
-        function processFile(file, type) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const parsed = parseSRT(e.target.result);
-                if (type === 'orig') {
-                    origBlocks = parsed;
-                    document.getElementById('name-orig').textContent = '✓ ' + file.name + ' (' + parsed.length + ' blok)';
-                    document.getElementById('name-orig').classList.remove('hidden');
-                } else {
-                    transBlocks = parsed;
-                    document.getElementById('name-trans').textContent = '✓ ' + file.name + ' (' + parsed.length + ' blok)';
-                    document.getElementById('name-trans').classList.remove('hidden');
+            const items = e.dataTransfer.items;
+            const fileObjs = [];
+
+            if (items && items.length > 0 && items[0].webkitGetAsEntry) {
+                const entries = [];
+                for (let i = 0; i < items.length; i++) {
+                    const entry = items[i].webkitGetAsEntry();
+                    if (entry) entries.push(entry);
                 }
-                updateCompareBtnState();
-                saveCompareState();
-            };
-            reader.readAsText(file, 'UTF-8');
-        }
-
-        function updateCompareBtnState() {
-            const btn = document.getElementById('btn-compare');
-            const tip = document.getElementById('btn-compare-tip');
-
-            if (origBlocks.length > 0 && transBlocks.length > 0) {
-                btn.disabled = false;
-                tip.textContent = '✓ Her iki dosya da yüklendi. Karşılaştırmayı başlatmak için yukarıdaki butona tıklayın.';
-                tip.className = 'text-xs text-emerald-400 font-medium';
-            } else if (origBlocks.length > 0 || transBlocks.length > 0) {
-                btn.disabled = false;
-                tip.textContent = '⚠️ İkinci dosyayı da yükleyin veya mevcut dosya ile karşılaştırın.';
-                tip.className = 'text-xs text-amber-400 font-medium';
+                await readEntriesRecursively(entries, fileObjs);
+                if (fileObjs.length) loadFilesWithPaths(fileObjs);
             } else {
-                btn.disabled = true;
-                tip.textContent = 'Karşılaştırma için lütfen her iki SRT dosyasını da yükleyin.';
-                tip.className = 'text-xs text-slate-500';
+                const rawFiles = [...e.dataTransfer.files].filter(f => f.name.endsWith('.srt'));
+                if (rawFiles.length) {
+                    loadFilesWithPaths(rawFiles.map(f => ({ file: f, path: f.webkitRelativePath || f.name })));
+                }
             }
         }
 
-        async function resetFiles() {
-            origBlocks = [];
-            transBlocks = [];
-            document.getElementById('name-orig').classList.add('hidden');
-            document.getElementById('name-trans').classList.add('hidden');
-            document.getElementById('comparison-dashboard').classList.add('hidden');
-            document.getElementById('stats-summary').classList.add('hidden');
-            document.getElementById('upload-section').classList.remove('hidden');
-            document.getElementById('select-orig').value = '';
-            document.getElementById('select-trans').value = '';
-            updateCompareBtnState();
-            await removeStorageItem('compareState');
+        function handleFilesFromInput(event) {
+            const rawFiles = [...event.target.files].filter(f => f.name.endsWith('.srt'));
+            if (!rawFiles.length) return;
+            const fileObjs = rawFiles.map(f => ({ file: f, path: f.webkitRelativePath || f.name }));
+            loadFilesWithPaths(fileObjs);
+            event.target.value = '';
         }
 
-        // ── PARSE SRT ────────────────────────────────────────────────────
+        async function readEntriesRecursively(entries, fileObjs) {
+            for (const entry of entries) {
+                if (entry.isFile && entry.name.endsWith('.srt')) {
+                    await new Promise((resolve) => {
+                        entry.file(f => {
+                            const relPath = entry.fullPath.startsWith('/') ? entry.fullPath.substring(1) : entry.fullPath;
+                            fileObjs.push({ file: f, path: relPath });
+                            resolve();
+                        });
+                    });
+                } else if (entry.isDirectory) {
+                    const dirReader = entry.createReader();
+                    const childEntries = await readAllDirectoryEntries(dirReader);
+                    await readEntriesRecursively(childEntries, fileObjs);
+                }
+            }
+        }
+        function readAllDirectoryEntries(dirReader) {
+            return new Promise((resolve) => {
+                let entries = [];
+                function readBatch() {
+                    dirReader.readEntries((results) => {
+                        if (!results.length) resolve(entries);
+                        else { entries = entries.concat(Array.from(results)); readBatch(); }
+                    }, () => resolve(entries));
+                }
+                readBatch();
+            });
+        }
+
+        function loadFilesWithPaths(fileObjs) {
+            let loaded = 0;
+            fileObjs.forEach(({ file, path }) => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    if (!fileStore[path]) {
+                        fileStore[path] = { path, name: file.name, content: e.target.result };
+                    }
+                    loaded++;
+                    if (loaded === fileObjs.length) {
+                        renderFileList();
+                        saveState();
+                    }
+                };
+                reader.readAsText(file, 'UTF-8');
+            });
+        }
+
+        // ── FILE TREE RENDERING ───────────────────────────────────────────
+        function buildFileTree() {
+            const root = { name: '', fullPath: '', type: 'folder', children: {} };
+            Object.keys(fileStore).forEach(key => {
+                const parts = key.split('/');
+                let current = root;
+                for (let i = 0; i < parts.length; i++) {
+                    const part = parts[i];
+                    const isFile = (i === parts.length - 1);
+                    const currentPath = current.fullPath ? current.fullPath + '/' + part : part;
+
+                    if (isFile) {
+                        current.children[part] = { name: part, fullPath: key, type: 'file', key: key };
+                    } else {
+                        if (!current.children[part]) {
+                            current.children[part] = { name: part, fullPath: currentPath, type: 'folder', children: {} };
+                        }
+                        current = current.children[part];
+                    }
+                }
+            });
+            return root;
+        }
+
+        function sortTree(node) {
+            if (node.type !== 'folder' || !node.children) return [];
+            const keys = Object.keys(node.children);
+            const list = keys.map(k => {
+                const child = node.children[k];
+                if (child.type === 'folder') child.sortedChildren = sortTree(child);
+                return child;
+            });
+            list.sort((a, b) => {
+                if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+                return a.name.localeCompare(b.name, 'tr', { numeric: true, sensitivity: 'base' });
+            });
+            return list;
+        }
+
+        function renderFileList() {
+            const list = document.getElementById('file-list');
+            const countEl = document.getElementById('file-count');
+            list.innerHTML = '';
+
+            const keys = Object.keys(fileStore);
+            if (keys.length === 0) {
+                list.innerHTML = '<p class="text-xs text-slate-500 text-center mt-6 px-2">Dosyalarınızı sürükleyin veya yukarıdan ekleyin.</p>';
+                countEl.textContent = '';
+                return;
+            }
+            countEl.textContent = keys.length + ' dosya yüklü';
+
+            const rootTree = buildFileTree();
+            const sortedNodes = sortTree(rootTree);
+            const container = document.createElement('div');
+            container.className = 'space-y-1';
+            sortedNodes.forEach(node => renderNode(node, container, 0));
+            list.appendChild(container);
+        }
+
+        function renderNode(node, parentEl, depth) {
+            const indentPx = depth * 10 + 4;
+
+            if (node.type === 'folder') {
+                const isCollapsed = collapsedFolders.has(node.fullPath);
+                const folderItem = document.createElement('div');
+                folderItem.className = 'file-item border border-slate-700/40 hover:border-slate-600 rounded-lg px-2 py-1.5 cursor-pointer flex items-center gap-1.5 text-slate-300 hover:text-slate-100 select-none bg-slate-800/40';
+                folderItem.style.paddingLeft = indentPx + 'px';
+
+                const chevronSvg = isCollapsed
+                    ? '<svg class="w-3.5 h-3.5 text-slate-500 shrink-0 transform -rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>'
+                    : '<svg class="w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
+                const folderIconSvg = isCollapsed
+                    ? '<svg class="w-4 h-4 text-amber-500/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>'
+                    : '<svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"/></svg>';
+
+                folderItem.innerHTML = chevronSvg + folderIconSvg +
+                    '<span class="text-xs font-semibold truncate flex-1" title="' + node.name + '">' + node.name + '</span>' +
+                    '<button class="del-btn text-slate-600 hover:text-red-400 shrink-0 p-0.5" title="Kaldır">' +
+                    '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>';
+
+                folderItem.addEventListener('click', () => {
+                    if (collapsedFolders.has(node.fullPath)) collapsedFolders.delete(node.fullPath);
+                    else collapsedFolders.add(node.fullPath);
+                    renderFileList();
+                    saveState();
+                });
+                folderItem.querySelector('.del-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm('Klasörü kaldırmak istediğinize emin misiniz?')) {
+                        const prefix = node.fullPath + '/';
+                        Object.keys(fileStore).filter(k => k === node.fullPath || k.startsWith(prefix)).forEach(k => delete fileStore[k]);
+                        checkSelections();
+                        renderFileList();
+                        saveState();
+                    }
+                });
+                parentEl.appendChild(folderItem);
+
+                if (!isCollapsed && node.sortedChildren) {
+                    const childrenContainer = document.createElement('div');
+                    childrenContainer.className = 'space-y-1 mt-0.5';
+                    node.sortedChildren.forEach(child => renderNode(child, childrenContainer, depth + 1));
+                    parentEl.appendChild(childrenContainer);
+                }
+            } else {
+                const isOrig = node.key === origFileKey;
+                const isTrans = node.key === transFileKey;
+
+                const fileItem = document.createElement('div');
+                let extraClasses = '';
+                if (isOrig) extraClasses = 'active-orig';
+                else if (isTrans) extraClasses = 'active-trans';
+
+                fileItem.className = 'file-item border border-slate-700/60 rounded-lg px-2 py-1 flex items-center gap-1.5 group ' + extraClasses;
+                fileItem.style.paddingLeft = indentPx + 'px';
+
+                const iconColor = isOrig ? 'text-indigo-400' : (isTrans ? 'text-violet-400' : 'text-slate-500');
+
+                fileItem.innerHTML =
+                    '<svg class="w-4 h-4 shrink-0 ' + iconColor + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' +
+                    '<span class="text-[11px] truncate flex-1 text-slate-300" title="' + node.fullPath + '">' + node.name + '</span>' +
+                    '<div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">' +
+                    '<button class="bg-indigo-900/60 hover:bg-indigo-600 text-indigo-300 hover:text-white px-1.5 py-0.5 rounded text-[10px] font-bold border border-indigo-700/50" title="Orijinal (Kaynak) dosya olarak seç" data-action="set-orig">O</button>' +
+                    '<button class="bg-violet-900/60 hover:bg-violet-600 text-violet-300 hover:text-white px-1.5 py-0.5 rounded text-[10px] font-bold border border-violet-700/50" title="Çeviri (Hedef) dosya olarak seç" data-action="set-trans">Ç</button>' +
+                    '<button class="text-slate-500 hover:text-red-400 p-0.5 ml-0.5" title="Kaldır" data-action="del"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>' +
+                    '</div>';
+
+                fileItem.querySelector('[data-action="set-orig"]').addEventListener('click', (e) => { e.stopPropagation(); setOriginal(node.key); });
+                fileItem.querySelector('[data-action="set-trans"]').addEventListener('click', (e) => { e.stopPropagation(); setTranslated(node.key); });
+                fileItem.querySelector('[data-action="del"]').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    delete fileStore[node.key];
+                    checkSelections();
+                    renderFileList();
+                    saveState();
+                });
+                parentEl.appendChild(fileItem);
+            }
+        }
+
+        // ── SELECTION LOGIC ───────────────────────────────────────────────
+        function setOriginal(key) {
+            origFileKey = key;
+            const file = fileStore[key];
+            origBlocks = parseSRT(file.content);
+            document.getElementById('summary-orig-name').textContent = file.path;
+
+            comparisonActive = false;
+            document.getElementById('comparison-dashboard').classList.add('hidden');
+            document.getElementById('comparison-dashboard').classList.remove('flex');
+
+            updateCompareBtn();
+            renderFileList();
+            saveState();
+        }
+
+        function setTranslated(key) {
+            transFileKey = key;
+            const file = fileStore[key];
+            transBlocks = parseSRT(file.content);
+            document.getElementById('summary-trans-name').textContent = file.path;
+
+            comparisonActive = false;
+            document.getElementById('comparison-dashboard').classList.add('hidden');
+            document.getElementById('comparison-dashboard').classList.remove('flex');
+
+            updateCompareBtn();
+            renderFileList();
+            saveState();
+        }
+
+        function checkSelections() {
+            if (origFileKey && !fileStore[origFileKey]) { origFileKey = null; origBlocks = []; document.getElementById('summary-orig-name').textContent = 'Seçilmedi'; }
+            if (transFileKey && !fileStore[transFileKey]) { transFileKey = null; transBlocks = []; document.getElementById('summary-trans-name').textContent = 'Seçilmedi'; }
+            updateCompareBtn();
+        }
+
+        function updateCompareBtn() {
+            const btn = document.getElementById('btn-compare');
+            btn.disabled = !(origFileKey && transFileKey);
+        }
+
+        async function clearAllDataPrompt() {
+            if (confirm('Yüklenen tüm dosyalar silinecektir. Emin misiniz?')) {
+                fileStore = {};
+                origFileKey = null;
+                transFileKey = null;
+                origBlocks = [];
+                transBlocks = [];
+                document.getElementById('summary-orig-name').textContent = 'Seçilmedi';
+                document.getElementById('summary-trans-name').textContent = 'Seçilmedi';
+                document.getElementById('comparison-dashboard').classList.add('hidden');
+                document.getElementById('comparison-dashboard').classList.remove('flex');
+                document.getElementById('stats-summary').classList.add('hidden');
+                updateCompareBtn();
+                renderFileList();
+                saveState();
+            }
+        }
+
+        // ── PARSER ────────────────────────────────────────────────────────
         function parseSRT(data) {
             const clean = data.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             const blocks = clean.trim().split(/\n\s*\n/);
@@ -275,42 +562,28 @@
             return subs;
         }
 
-        // ── TIME PARSING & VALIDATION ────────────────────────────────────
         function parseTimeRange(timeStr) {
-            const parts = timeStr.split(/\s*-->\s*/);
-            if (parts.length !== 2) {
-                return { valid: false, error: 'Format hatası: "-->" ok simgesi bulunamadı' };
-            }
+            const parts = timeStr.split(/\s*-->\s */);
+            if (parts.length !== 2) return { valid: false, error: 'Format hatası: "-->" bulunamadı' };
             const startMs = parseSingleTimestamp(parts[0]);
             const endMs = parseSingleTimestamp(parts[1]);
-
-            if (startMs === null || endMs === null) {
-                return { valid: false, error: 'Geçersiz zaman damgası formatı (Beklenen: 00:00:00,000)' };
-            }
-            if (startMs > endMs) {
-                return { valid: false, error: 'Başlangıç zamanı bitiş zamanından sonra olamaz' };
-            }
-
+            if (startMs === null || endMs === null) return { valid: false, error: 'Geçersiz format' };
+            if (startMs > endMs) return { valid: false, error: 'Başlangıç bitişten sonra' };
             return { valid: true, startMs, endMs, error: null };
         }
-
         function parseSingleTimestamp(ts) {
-            // Match HH:MM:SS,mmm or HH:MM:SS.mmm
             const m = ts.trim().match(/^(\d{2}):(\d{2}):(\d{2})[.,](\d{3})$/);
             if (!m) return null;
-            const h = parseInt(m[1], 10);
-            const min = parseInt(m[2], 10);
-            const sec = parseInt(m[3], 10);
-            const ms = parseInt(m[4], 10);
-            return h * 3600000 + min * 60000 + sec * 1000 + ms;
+            return parseInt(m[1], 10) * 3600000 + parseInt(m[2], 10) * 60000 + parseInt(m[3], 10) * 1000 + parseInt(m[4], 10);
         }
 
         // ── COMPARISON ENGINE ─────────────────────────────────────────────
         function checkAndRenderComparison() {
-            if (!origBlocks.length && !transBlocks.length) return;
+            if (!origBlocks.length || !transBlocks.length) return;
 
-            document.getElementById('upload-section').classList.add('hidden');
+            comparisonActive = true;
             document.getElementById('comparison-dashboard').classList.remove('hidden');
+            document.getElementById('comparison-dashboard').classList.add('flex');
             document.getElementById('stats-summary').classList.remove('hidden');
             document.getElementById('stats-summary').classList.add('flex');
 
@@ -320,14 +593,16 @@
             const banner = document.getElementById('block-mismatch-banner');
             if (origBlocks.length !== transBlocks.length) {
                 banner.classList.remove('hidden');
+                banner.classList.add('flex');
                 document.getElementById('block-mismatch-text').textContent =
-                    `Orijinal dosyada ${origBlocks.length} altyazı satırı/bloğu bulunurken, çeviri dosyasında ${transBlocks.length} altyazı satırı/bloğu bulunmaktadır.`;
+                    `Orijinal dosyada ${origBlocks.length}, çeviri dosyasında ${transBlocks.length} altyazı bloğu bulunmaktadır.`;
             } else {
                 banner.classList.add('hidden');
+                banner.classList.remove('flex');
             }
 
             renderComparisonList();
-            saveCompareState();
+            saveState();
         }
 
         function setFilter(filter) {
@@ -335,13 +610,12 @@
             document.getElementById('tab-all').className = 'px-3 py-1.5 rounded-md text-xs font-medium transition ' + (filter === 'all' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200');
             document.getElementById('tab-issues').className = 'px-3 py-1.5 rounded-md text-xs font-medium transition ' + (filter === 'issues' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200');
             renderComparisonList();
-            saveCompareState();
+            saveState();
         }
 
         function renderComparisonList() {
             const container = document.getElementById('comparison-list');
             container.innerHTML = '';
-
             const maxLen = Math.max(origBlocks.length, transBlocks.length);
             const search = document.getElementById('search-input').value.toLowerCase().trim();
 
@@ -352,112 +626,62 @@
                 const orig = origBlocks[i] || null;
                 const trans = transBlocks[i] || null;
                 const idx = i + 1;
-
                 const blockIssues = [];
 
-                // Kontrol 1: Zaman Formatı Hatası
-                if (orig && !orig.timeValid) {
-                    blockIssues.push({ type: 'time_format', message: `Orijinal Zaman Format Hatası: ${orig.timeError}` });
-                }
-                if (trans && !trans.timeValid) {
-                    blockIssues.push({ type: 'time_format', message: `Çeviri Zaman Format Hatası: ${trans.timeError}` });
-                }
-
-                // Kontrol 2: Zaman Damgası / Aralığı Uyuşmazlığı (Orijinal vs Çeviri)
+                if (orig && !orig.timeValid) blockIssues.push({ message: `Orijinal Zaman Format Hatası: ${orig.timeError}` });
+                if (trans && !trans.timeValid) blockIssues.push({ message: `Çeviri Zaman Format Hatası: ${trans.timeError}` });
                 if (orig && trans && orig.timeValid && trans.timeValid) {
-                    if (orig.rawTime !== trans.rawTime) {
-                        blockIssues.push({
-                            type: 'time_mismatch',
-                            message: `Zaman Damgası Aralığı Uyuşmuyor!\n• Orijinal Aralık: "${orig.rawTime}"\n• Çeviri Aralık: "${trans.rawTime}"`
-                        });
-                    }
+                    if (orig.rawTime !== trans.rawTime) blockIssues.push({ message: `Zaman Damgası Uyuşmuyor!\n• Orijinal: ${orig.rawTime}\n• Çeviri: ${trans.rawTime}` });
                 }
-
-                // Kontrol 3: Eksik Blok / Satır Sayısı Uyuşmazlığı
-                if (!orig) {
-                    blockIssues.push({ type: 'missing_block', message: 'Bu altyazı bloğu Orijinal dosyada mevcut değil (Satır sayısı uyuşmazlığı)!' });
-                }
-                if (!trans) {
-                    blockIssues.push({ type: 'missing_block', message: 'Bu altyazı bloğu Çeviri dosyasında mevcut değil (Satır sayısı uyuşmazlığı)!' });
-                }
-
-                // Kontrol 4: Çakışan Zaman Aralıkları (Bir önceki blokla çakışma)
+                if (!orig) blockIssues.push({ message: 'Orijinal dosyada mevcut değil (Eksik blok)!' });
+                if (!trans) blockIssues.push({ message: 'Çeviri dosyasında mevcut değil (Eksik blok)!' });
                 if (trans && trans.timeValid && i > 0 && transBlocks[i - 1] && transBlocks[i - 1].timeValid) {
-                    if (trans.startMs < transBlocks[i - 1].endMs) {
-                        blockIssues.push({
-                            type: 'overlap',
-                            message: `Çakışan Zaman Damgası! Başlangıç zamanı bir önceki altyazı bloğunun bitişinden önce geliyor.`
-                        });
-                    }
+                    if (trans.startMs < transBlocks[i - 1].endMs) blockIssues.push({ message: `Çakışan Zaman Damgası! Başlangıç zamanı bir önceki bloğun bitişinden önce geliyor.` });
                 }
 
                 const hasIssues = blockIssues.length > 0;
                 if (hasIssues) issueCount++;
 
-                // Search Filter
                 const matchesSearch = !search ||
                     (orig && orig.text.toLowerCase().includes(search)) ||
                     (trans && trans.text.toLowerCase().includes(search)) ||
                     idx.toString() === search;
 
                 if (!matchesSearch) continue;
-
-                // Active Tab Filter
                 if (activeFilter === 'issues' && !hasIssues) continue;
 
                 totalRendered++;
 
-                // Build Card HTML
                 const card = document.createElement('div');
                 card.className = 'bg-slate-800 border ' + (hasIssues ? 'border-amber-800/80 bg-slate-800/90' : 'border-slate-700/80') + ' rounded-xl p-4 space-y-3 shadow-md fade-in';
 
                 const statusBadge = hasIssues
-                    ? `<span class="bg-amber-950/80 text-amber-300 text-xs px-2.5 py-1 rounded-md font-semibold border border-amber-700/60 flex items-center gap-1">` +
-                        `<svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>` +
-                        `⚠️ ${blockIssues.length} Sorun Tespit Edildi</span>`
-                    : `<span class="bg-emerald-950/60 text-emerald-300 text-xs px-2.5 py-1 rounded-md font-semibold border border-emerald-800/50 flex items-center gap-1">` +
-                        `<svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>` +
-                        `✓ Uyumlu</span>`;
+                    ? `<span class="bg-amber-950/80 text-amber-300 text-xs px-2.5 py-1 rounded-md font-semibold border border-amber-700/60 flex items-center gap-1"><svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>⚠️ ${blockIssues.length} Sorun</span>`
+                    : `<span class="bg-emerald-950/60 text-emerald-300 text-xs px-2.5 py-1 rounded-md font-semibold border border-emerald-800/50 flex items-center gap-1"><svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>✓ Uyumlu</span>`;
 
                 let issuesHTML = '';
                 if (hasIssues) {
                     const listItems = blockIssues.map(iss => `<li class="flex items-start gap-1.5"><span class="text-amber-400 font-bold">•</span><span>${iss.message.replace(/\n/g, '<br>')}</span></li>`).join('');
                     issuesHTML = `<div class="bg-amber-950/40 border border-amber-800/60 rounded-lg p-3 text-xs text-amber-200/90 space-y-1 mt-2">` +
                         `<p class="font-semibold text-amber-300 flex items-center gap-1">⚠️ Tespit Edilen Uyarılar:</p>` +
-                        `<ul class="space-y-1 pl-1 text-amber-200/90 font-mono text-[11px]">${listItems}</ul>` +
-                    `</div>`;
+                        `<ul class="space-y-1 pl-1 text-amber-200/90 font-mono text-[11px]">${listItems}</ul></div>`;
                 }
-
-                const origTime = orig ? orig.rawTime : 'Mevcut Değil';
-                const transTime = trans ? trans.rawTime : 'Mevcut Değil';
 
                 card.innerHTML =
                     `<div class="flex justify-between items-center border-b border-slate-700/60 pb-2">` +
-                        `<span class="text-sm font-bold text-slate-300 bg-slate-900 px-2.5 py-1 rounded-md">#${idx}</span>` +
-                        `<div>${statusBadge}</div>` +
+                    `<span class="text-sm font-bold text-slate-300 bg-slate-900 px-2.5 py-1 rounded-md">#${idx}</span>` +
+                    `<div>${statusBadge}</div>` +
                     `</div>` +
                     `<div class="grid md:grid-cols-2 gap-4">` +
-
-                        // Left: Original
-                        `<div class="bg-slate-900/60 border border-slate-700/60 rounded-lg p-3 space-y-2">` +
-                            `<div class="flex justify-between items-center text-xs border-b border-slate-800 pb-1.5">` +
-                                `<span class="font-semibold text-indigo-400 uppercase tracking-wider">Orijinal</span>` +
-                                `<span class="font-mono text-indigo-300 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/40 text-[11px]">${origTime}</span>` +
-                            `</div>` +
-                            `<p class="text-sm text-slate-200 whitespace-pre-wrap font-sans min-h-[40px]">${orig ? orig.text : '<em class="text-slate-500">Blok yok</em>'}</p>` +
-                        `</div>` +
-
-                        // Right: Translated
-                        `<div class="bg-slate-900/60 border border-slate-700/60 rounded-lg p-3 space-y-2">` +
-                            `<div class="flex justify-between items-center text-xs border-b border-slate-800 pb-1.5">` +
-                                `<span class="font-semibold text-violet-400 uppercase tracking-wider">Çeviri</span>` +
-                                `<span class="font-mono text-violet-300 bg-violet-950/60 px-2 py-0.5 rounded border border-violet-800/40 text-[11px]">${transTime}</span>` +
-                            `</div>` +
-                            `<p class="text-sm text-slate-200 whitespace-pre-wrap font-sans min-h-[40px]">${trans ? trans.text : '<em class="text-slate-500">Blok yok</em>'}</p>` +
-                        `</div>` +
-
+                    `<div class="bg-slate-900/60 border border-slate-700/60 rounded-lg p-3 space-y-2">` +
+                    `<div class="flex justify-between items-center text-xs border-b border-slate-800 pb-1.5"><span class="font-semibold text-indigo-400 uppercase">Orijinal</span><span class="font-mono text-indigo-300 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/40 text-[11px]">${orig ? orig.rawTime : '-'}</span></div>` +
+                    `<p class="text-sm text-slate-200 whitespace-pre-wrap font-sans min-h-[40px]">${orig ? orig.text : '<em class="text-slate-500">Blok yok</em>'}</p>` +
                     `</div>` +
-                    issuesHTML;
+                    `<div class="bg-slate-900/60 border border-slate-700/60 rounded-lg p-3 space-y-2">` +
+                    `<div class="flex justify-between items-center text-xs border-b border-slate-800 pb-1.5"><span class="font-semibold text-violet-400 uppercase">Çeviri</span><span class="font-mono text-violet-300 bg-violet-950/60 px-2 py-0.5 rounded border border-violet-800/40 text-[11px]">${trans ? trans.rawTime : '-'}</span></div>` +
+                    `<p class="text-sm text-slate-200 whitespace-pre-wrap font-sans min-h-[40px]">${trans ? trans.text : '<em class="text-slate-500">Blok yok</em>'}</p>` +
+                    `</div>` +
+                    `</div>` + issuesHTML;
 
                 container.appendChild(card);
             }
@@ -466,111 +690,44 @@
             document.getElementById('count-issues').textContent = issueCount;
             document.getElementById('issue-count').textContent = issueCount;
 
-            if (issueCount > 0) {
-                document.getElementById('issue-badge-summary').className = 'bg-amber-950/60 border border-amber-800 px-3 py-1.5 rounded-lg text-amber-200 font-semibold';
-            } else {
-                document.getElementById('issue-badge-summary').className = 'bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300';
-            }
+            if (issueCount > 0) document.getElementById('issue-badge-summary').className = 'bg-amber-950/60 border border-amber-800 px-3 py-1.5 rounded-lg text-amber-200 font-semibold flex items-center gap-1';
+            else document.getElementById('issue-badge-summary').className = 'bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300 flex items-center gap-1';
 
-            if (totalRendered === 0) {
-                container.innerHTML = `<div class="bg-slate-800/40 border border-slate-700 rounded-xl p-8 text-center text-slate-400 text-sm">Gösterilecek altyazı bloğu bulunamadı.</div>`;
-            }
+            if (totalRendered === 0) container.innerHTML = `<div class="bg-slate-800/40 border border-slate-700 rounded-xl p-8 text-center text-slate-400 text-sm">Gösterilecek altyazı bloğu bulunamadı.</div>`;
         }
 
-        // ── STORAGE & PERSISTENCE ─────────────────────────────────────────
-        async function saveCompareState() {
-            const nameOrig = document.getElementById('name-orig')?.textContent || '';
-            const nameTrans = document.getElementById('name-trans')?.textContent || '';
+        // ── STATE PERSISTENCE ─────────────────────────────────────────────
+        async function saveState() {
             const state = {
-                origBlocks,
-                transBlocks,
-                nameOrig,
-                nameTrans,
-                activeFilter
+                fileStore,
+                collapsedFolders: Array.from(collapsedFolders),
+                origFileKey,
+                transFileKey,
+                activeFilter,
+                comparisonActive
             };
-            await setStorageItem('compareState', state);
+            await setStorageItem('compareApp2', state); // use new key so it doesn't conflict with old state structure
         }
 
-        async function loadCompareState() {
-            const state = await getStorageItem('compareState');
+        async function loadState() {
+            const state = await getStorageItem('compareApp2');
             if (state) {
-                if (state.origBlocks && state.origBlocks.length > 0) {
-                    origBlocks = state.origBlocks;
-                    document.getElementById('name-orig').textContent = state.nameOrig || `✓ Orijinal (${origBlocks.length} blok)`;
-                    document.getElementById('name-orig').classList.remove('hidden');
-                }
-                if (state.transBlocks && state.transBlocks.length > 0) {
-                    transBlocks = state.transBlocks;
-                    document.getElementById('name-trans').textContent = state.nameTrans || `✓ Çeviri (${transBlocks.length} blok)`;
-                    document.getElementById('name-trans').classList.remove('hidden');
-                }
-                if (state.activeFilter) {
-                    activeFilter = state.activeFilter;
-                    document.getElementById('tab-all').className = 'px-3 py-1.5 rounded-md text-xs font-medium transition ' + (activeFilter === 'all' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200');
-                    document.getElementById('tab-issues').className = 'px-3 py-1.5 rounded-md text-xs font-medium transition ' + (activeFilter === 'issues' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200');
-                }
-                updateCompareBtnState();
-                if (origBlocks.length > 0 && transBlocks.length > 0) {
-                    checkAndRenderComparison();
-                }
+                if (state.fileStore) fileStore = state.fileStore;
+                if (state.collapsedFolders) collapsedFolders = new Set(state.collapsedFolders);
+                if (state.activeFilter) activeFilter = state.activeFilter;
+
+                if (state.origFileKey && fileStore[state.origFileKey]) setOriginal(state.origFileKey);
+                if (state.transFileKey && fileStore[state.transFileKey]) setTranslated(state.transFileKey);
+
+                if (state.comparisonActive && origFileKey && transFileKey) checkAndRenderComparison();
+
+                renderFileList();
             }
-            await renderQuickSelectFromEditor();
         }
 
-        async function renderQuickSelectFromEditor() {
-            const fileStore = await getStorageItem('fileStore');
-            if (!fileStore || Object.keys(fileStore).length === 0) return;
+        window.addEventListener('DOMContentLoaded', loadState);
 
-            const selectOrig = document.getElementById('select-orig');
-            const selectTrans = document.getElementById('select-trans');
-            if (!selectOrig || !selectTrans) return;
-
-            const options = ['<option value="">-- Editördeki Yüklü Dosyalardan Seç --</option>'];
-            Object.keys(fileStore).forEach(key => {
-                const item = fileStore[key];
-                options.push(`<option value="${key}">${item.name} (${item.subtitles.length} blok)</option>`);
-            });
-
-            selectOrig.innerHTML = options.join('');
-            selectTrans.innerHTML = options.join('');
-
-            document.getElementById('quick-select-orig-container')?.classList.remove('hidden');
-            document.getElementById('quick-select-trans-container')?.classList.remove('hidden');
-        }
-
-        async function selectFromEditor(key, type) {
-            if (!key) return;
-            const fileStore = await getStorageItem('fileStore');
-            if (!fileStore || !fileStore[key]) return;
-
-            const item = fileStore[key];
-            const parsed = item.subtitles.map((sub, idx) => {
-                const parsedTime = parseTimeRange(sub.time);
-                return {
-                    index: idx + 1,
-                    rawTime: sub.time,
-                    text: sub.text,
-                    startMs: parsedTime.startMs,
-                    endMs: parsedTime.endMs,
-                    timeValid: parsedTime.valid,
-                    timeError: parsedTime.error
-                };
-            });
-
-            if (type === 'orig') {
-                origBlocks = parsed;
-                document.getElementById('name-orig').textContent = '✓ ' + item.name + ' (' + parsed.length + ' blok)';
-                document.getElementById('name-orig').classList.remove('hidden');
-            } else {
-                transBlocks = parsed;
-                document.getElementById('name-trans').textContent = '✓ ' + item.name + ' (' + parsed.length + ' blok)';
-                document.getElementById('name-trans').classList.remove('hidden');
-            }
-            updateCompareBtnState();
-            saveCompareState();
-        }
-
-        window.addEventListener('DOMContentLoaded', loadCompareState);
     </script>
 </body>
+
 </html>
