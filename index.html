@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SRT Altyazı Düzenleyici & Çevirmen</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="storage.js"></script>
     <style>
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
@@ -48,13 +49,14 @@
                 </svg>
                 Karşılaştırma Yap
             </a>
+            <span id="save-status" class="hidden flex items-center gap-1.5 text-xs text-emerald-400 font-medium transition-all ml-2"></span>
         </div>
 
         <div id="action-buttons" class="hidden flex-wrap gap-3 items-center">
             <span id="global-progress" class="text-xs text-emerald-400 font-medium hidden">Çevriliyor: %0</span>
 
             <div class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700">
-                <select id="target-lang" class="bg-transparent text-sm text-indigo-300 font-medium focus:outline-none cursor-pointer">
+                <select id="target-lang" onchange="triggerAutoSave()" class="bg-transparent text-sm text-indigo-300 font-medium focus:outline-none cursor-pointer">
                     <option value="tr" selected>Türkçe (tr)</option>
                     <option value="en">İngilizce (en)</option>
                     <option value="de">Almanca (de)</option>
@@ -129,8 +131,11 @@
                 </p>
             </div>
 
-            <div class="p-2 border-t border-slate-700">
-                <p id="file-count" class="text-xs text-slate-500 text-center"></p>
+            <div class="p-2 border-t border-slate-700 flex justify-between items-center text-xs px-3">
+                <p id="file-count" class="text-slate-500"></p>
+                <button onclick="clearAllDataPrompt()" class="text-slate-500 hover:text-red-400 transition underline underline-offset-2" title="Tüm yüklü dosyaları ve verileri sıfırla">
+                    Temizle
+                </button>
             </div>
         </aside>
 
@@ -169,6 +174,72 @@
         let activeFile       = null;
         let sidebarOpen      = true;
         let collapsedFolders = new Set();
+
+        // ── AUTO-SAVE & PERSISTENCE ───────────────────────────────────────
+        let saveTimeout = null;
+        function triggerAutoSave() {
+            const statusEl = document.getElementById('save-status');
+            if (statusEl) {
+                statusEl.classList.remove('hidden');
+                statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Kaydediliyor...';
+                statusEl.className = "flex items-center gap-1.5 text-xs text-amber-400 font-medium transition-all opacity-100 ml-2";
+            }
+
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(async () => {
+                await setStorageItem('fileStore', fileStore);
+                await setStorageItem('activeFile', activeFile);
+                await setStorageItem('targetLang', document.getElementById('target-lang')?.value || 'tr');
+                await setStorageItem('collapsedFolders', Array.from(collapsedFolders));
+
+                if (statusEl) {
+                    statusEl.innerHTML = '<svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Otomatik Kaydedildi';
+                    statusEl.className = "flex items-center gap-1.5 text-xs text-emerald-400 font-medium transition-all opacity-100 ml-2";
+                    setTimeout(() => {
+                        statusEl.classList.add('opacity-70');
+                    }, 2000);
+                }
+            }, 300);
+        }
+
+        async function loadEditorState() {
+            const storedFileStore = await getStorageItem('fileStore');
+            const storedActiveFile = await getStorageItem('activeFile');
+            const storedTargetLang = await getStorageItem('targetLang');
+            const storedCollapsed = await getStorageItem('collapsedFolders');
+
+            if (storedTargetLang) {
+                const langEl = document.getElementById('target-lang');
+                if (langEl) langEl.value = storedTargetLang;
+            }
+
+            if (storedCollapsed && Array.isArray(storedCollapsed)) {
+                collapsedFolders = new Set(storedCollapsed);
+            }
+
+            if (storedFileStore && Object.keys(storedFileStore).length > 0) {
+                fileStore = storedFileStore;
+                renderFileList();
+                if (storedActiveFile && fileStore[storedActiveFile]) {
+                    switchToFile(storedActiveFile);
+                } else {
+                    const firstKey = Object.keys(fileStore)[0];
+                    if (firstKey) switchToFile(firstKey);
+                }
+            }
+        }
+
+        async function clearAllDataPrompt() {
+            if (confirm('Yüklenen tüm dosyalar ve yapılan değişiklikler silinecektir. Emin misiniz?')) {
+                await clearAllStorage();
+                fileStore = {};
+                activeFile = null;
+                collapsedFolders.clear();
+                location.reload();
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', loadEditorState);
 
         // ── SIDEBAR ──────────────────────────────────────────────────────
         function toggleSidebar() {
@@ -267,6 +338,8 @@
                         renderFileList();
                         if (!activeFile && firstAddedKey) {
                             switchToFile(firstAddedKey);
+                        } else {
+                            triggerAutoSave();
                         }
                     }
                 };
@@ -407,6 +480,7 @@
                         collapsedFolders.add(node.fullPath);
                     }
                     renderFileList();
+                    triggerAutoSave();
                 });
 
                 folderItem.querySelector('.del-btn').addEventListener('click', function(e) {
@@ -464,6 +538,7 @@
             document.getElementById('action-buttons').classList.add('flex');
             renderSubtitles(entry.subtitles);
             renderFileList();
+            triggerAutoSave();
         }
 
         // ── REMOVE FILE / FOLDER ──────────────────────────────────────────
@@ -483,6 +558,7 @@
                 }
             }
             renderFileList();
+            triggerAutoSave();
         }
 
         function removeFolder(folderPath) {
@@ -505,6 +581,7 @@
                 document.getElementById('action-buttons').classList.remove('flex');
             }
             renderFileList();
+            triggerAutoSave();
         }
 
         // ── HELPERS ───────────────────────────────────────────────────────
@@ -725,12 +802,16 @@
         }
 
         // ── SUBTITLE OPS ──────────────────────────────────────────────────
-        function updateTime(index, value) { getActiveSubtitles()[index].time = value; }
+        function updateTime(index, value) {
+            getActiveSubtitles()[index].time = value;
+            triggerAutoSave();
+        }
 
         function handleTextChange(index, textarea) {
             getActiveSubtitles()[index].text = textarea.value;
             autoResizeTextarea(textarea);
             updateLineStatsUI(index);
+            triggerAutoSave();
         }
 
         function updateLineStatsUI(index) {
@@ -760,6 +841,7 @@
             }
             subs.push({ index: subs.length + 1, time: newTime, text: '', suggestion: '' });
             renderSubtitles(subs);
+            triggerAutoSave();
             setTimeout(function() {
                 var last = document.getElementById('sub-card-' + (subs.length-1));
                 if (last) last.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -772,6 +854,7 @@
             subs.splice(index, 1);
             subs.forEach(function(s,i) { s.index = i+1; });
             renderSubtitles(subs);
+            triggerAutoSave();
         }
 
         function applySuggestion(index) {
@@ -783,6 +866,7 @@
             document.getElementById('suggestion-box-' + index).classList.add('hidden');
             autoResizeTextarea(ta);
             updateLineStatsUI(index);
+            triggerAutoSave();
             ta.classList.add('ring-2','ring-emerald-500');
             setTimeout(function() { ta.classList.remove('ring-2','ring-emerald-500'); }, 500);
         }
@@ -837,6 +921,7 @@
                 prog.innerText = 'Çevriliyor: %' + Math.round((done/total)*100);
             }
             prog.innerText = 'Çeviri Tamamlandı!';
+            triggerAutoSave();
             setTimeout(function() { prog.classList.add('hidden'); }, 4000);
             btn.disabled = false; btn.classList.remove('opacity-50','cursor-not-allowed');
             alert('Toplu çeviri tamamlandı!');

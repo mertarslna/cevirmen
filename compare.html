@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SRT Karşılaştırma & Zaman Damgası Kontrolü</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="storage.js"></script>
     <style>
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
@@ -73,6 +74,12 @@
                     <p class="text-xs text-slate-400 mt-1">İngilizce / Kaynak dosya (sürükleyin veya tıklayın)</p>
                 </div>
                 <span id="name-orig" class="text-xs font-mono text-indigo-300 bg-indigo-950/80 px-2.5 py-1 rounded border border-indigo-800/50 hidden"></span>
+                <div id="quick-select-orig-container" class="hidden mt-2 text-xs w-full" onclick="event.stopPropagation()">
+                    <span class="text-slate-400 block mb-1 font-medium">veya Editördeki Dosyalardan Seç:</span>
+                    <select id="select-orig" onchange="selectFromEditor(this.value, 'orig')" class="bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-indigo-300 w-full focus:outline-none focus:border-indigo-500">
+                        <option value="">-- Editördeki Yüklü Dosyalardan Seç --</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Translated File Drop Zone -->
@@ -94,6 +101,12 @@
                     <p class="text-xs text-slate-400 mt-1">Tamamlanan Türkçe çeviri dosya (sürükleyin veya tıklayın)</p>
                 </div>
                 <span id="name-trans" class="text-xs font-mono text-violet-300 bg-violet-950/80 px-2.5 py-1 rounded border border-violet-800/50 hidden"></span>
+                <div id="quick-select-trans-container" class="hidden mt-2 text-xs w-full" onclick="event.stopPropagation()">
+                    <span class="text-slate-400 block mb-1 font-medium">veya Editördeki Dosyalardan Seç:</span>
+                    <select id="select-trans" onchange="selectFromEditor(this.value, 'trans')" class="bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-violet-300 w-full focus:outline-none focus:border-violet-500">
+                        <option value="">-- Editördeki Yüklü Dosyalardan Seç --</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Compare Button -->
@@ -199,6 +212,7 @@
                     document.getElementById('name-trans').classList.remove('hidden');
                 }
                 updateCompareBtnState();
+                saveCompareState();
             };
             reader.readAsText(file, 'UTF-8');
         }
@@ -222,7 +236,7 @@
             }
         }
 
-        function resetFiles() {
+        async function resetFiles() {
             origBlocks = [];
             transBlocks = [];
             document.getElementById('name-orig').classList.add('hidden');
@@ -230,7 +244,10 @@
             document.getElementById('comparison-dashboard').classList.add('hidden');
             document.getElementById('stats-summary').classList.add('hidden');
             document.getElementById('upload-section').classList.remove('hidden');
+            document.getElementById('select-orig').value = '';
+            document.getElementById('select-trans').value = '';
             updateCompareBtnState();
+            await removeStorageItem('compareState');
         }
 
         // ── PARSE SRT ────────────────────────────────────────────────────
@@ -310,6 +327,7 @@
             }
 
             renderComparisonList();
+            saveCompareState();
         }
 
         function setFilter(filter) {
@@ -317,6 +335,7 @@
             document.getElementById('tab-all').className = 'px-3 py-1.5 rounded-md text-xs font-medium transition ' + (filter === 'all' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200');
             document.getElementById('tab-issues').className = 'px-3 py-1.5 rounded-md text-xs font-medium transition ' + (filter === 'issues' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200');
             renderComparisonList();
+            saveCompareState();
         }
 
         function renderComparisonList() {
@@ -457,6 +476,101 @@
                 container.innerHTML = `<div class="bg-slate-800/40 border border-slate-700 rounded-xl p-8 text-center text-slate-400 text-sm">Gösterilecek altyazı bloğu bulunamadı.</div>`;
             }
         }
+
+        // ── STORAGE & PERSISTENCE ─────────────────────────────────────────
+        async function saveCompareState() {
+            const nameOrig = document.getElementById('name-orig')?.textContent || '';
+            const nameTrans = document.getElementById('name-trans')?.textContent || '';
+            const state = {
+                origBlocks,
+                transBlocks,
+                nameOrig,
+                nameTrans,
+                activeFilter
+            };
+            await setStorageItem('compareState', state);
+        }
+
+        async function loadCompareState() {
+            const state = await getStorageItem('compareState');
+            if (state) {
+                if (state.origBlocks && state.origBlocks.length > 0) {
+                    origBlocks = state.origBlocks;
+                    document.getElementById('name-orig').textContent = state.nameOrig || `✓ Orijinal (${origBlocks.length} blok)`;
+                    document.getElementById('name-orig').classList.remove('hidden');
+                }
+                if (state.transBlocks && state.transBlocks.length > 0) {
+                    transBlocks = state.transBlocks;
+                    document.getElementById('name-trans').textContent = state.nameTrans || `✓ Çeviri (${transBlocks.length} blok)`;
+                    document.getElementById('name-trans').classList.remove('hidden');
+                }
+                if (state.activeFilter) {
+                    activeFilter = state.activeFilter;
+                    document.getElementById('tab-all').className = 'px-3 py-1.5 rounded-md text-xs font-medium transition ' + (activeFilter === 'all' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200');
+                    document.getElementById('tab-issues').className = 'px-3 py-1.5 rounded-md text-xs font-medium transition ' + (activeFilter === 'issues' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200');
+                }
+                updateCompareBtnState();
+                if (origBlocks.length > 0 && transBlocks.length > 0) {
+                    checkAndRenderComparison();
+                }
+            }
+            await renderQuickSelectFromEditor();
+        }
+
+        async function renderQuickSelectFromEditor() {
+            const fileStore = await getStorageItem('fileStore');
+            if (!fileStore || Object.keys(fileStore).length === 0) return;
+
+            const selectOrig = document.getElementById('select-orig');
+            const selectTrans = document.getElementById('select-trans');
+            if (!selectOrig || !selectTrans) return;
+
+            const options = ['<option value="">-- Editördeki Yüklü Dosyalardan Seç --</option>'];
+            Object.keys(fileStore).forEach(key => {
+                const item = fileStore[key];
+                options.push(`<option value="${key}">${item.name} (${item.subtitles.length} blok)</option>`);
+            });
+
+            selectOrig.innerHTML = options.join('');
+            selectTrans.innerHTML = options.join('');
+
+            document.getElementById('quick-select-orig-container')?.classList.remove('hidden');
+            document.getElementById('quick-select-trans-container')?.classList.remove('hidden');
+        }
+
+        async function selectFromEditor(key, type) {
+            if (!key) return;
+            const fileStore = await getStorageItem('fileStore');
+            if (!fileStore || !fileStore[key]) return;
+
+            const item = fileStore[key];
+            const parsed = item.subtitles.map((sub, idx) => {
+                const parsedTime = parseTimeRange(sub.time);
+                return {
+                    index: idx + 1,
+                    rawTime: sub.time,
+                    text: sub.text,
+                    startMs: parsedTime.startMs,
+                    endMs: parsedTime.endMs,
+                    timeValid: parsedTime.valid,
+                    timeError: parsedTime.error
+                };
+            });
+
+            if (type === 'orig') {
+                origBlocks = parsed;
+                document.getElementById('name-orig').textContent = '✓ ' + item.name + ' (' + parsed.length + ' blok)';
+                document.getElementById('name-orig').classList.remove('hidden');
+            } else {
+                transBlocks = parsed;
+                document.getElementById('name-trans').textContent = '✓ ' + item.name + ' (' + parsed.length + ' blok)';
+                document.getElementById('name-trans').classList.remove('hidden');
+            }
+            updateCompareBtnState();
+            saveCompareState();
+        }
+
+        window.addEventListener('DOMContentLoaded', loadCompareState);
     </script>
 </body>
 </html>
