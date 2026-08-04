@@ -324,16 +324,37 @@
                 const reader = new FileReader();
                 reader.onload = function (e) {
                     if (!fileStore[path]) {
-                        fileStore[path] = { path, name: file.name, content: e.target.result };
+                        // Store in the same format as index.html (subtitles array + raw content)
+                        fileStore[path] = {
+                            path,
+                            name: file.name,
+                            content: e.target.result,
+                            subtitles: parseSubtitlesForEditor(e.target.result)
+                        };
                     }
                     loaded++;
                     if (loaded === fileObjs.length) {
                         renderFileList();
-                        saveState();
+                        saveSharedFileStore();
+                        saveCompareState();
                     }
                 };
                 reader.readAsText(file, 'UTF-8');
             });
+        }
+
+        // Parse subtitles in editor format (for shared storage compatibility)
+        function parseSubtitlesForEditor(data) {
+            const clean = data.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            const blocks = clean.trim().split(/\n\s*\n/);
+            const subs = [];
+            blocks.forEach(block => {
+                const lines = block.split('\n');
+                if (lines.length >= 3) {
+                    subs.push({ index: subs.length + 1, time: lines[1].trim(), text: lines.slice(2).join('\n'), suggestion: '' });
+                }
+            });
+            return subs;
         }
 
         // ── FILE TREE RENDERING ───────────────────────────────────────────
@@ -471,17 +492,28 @@
                     delete fileStore[node.key];
                     checkSelections();
                     renderFileList();
-                    saveState();
+                    saveSharedFileStore();
+                    saveCompareState();
                 });
                 parentEl.appendChild(fileItem);
             }
         }
 
         // ── SELECTION LOGIC ───────────────────────────────────────────────
+        function getFileContent(key) {
+            const file = fileStore[key];
+            if (file.content) return file.content;
+            // Reconstruct from subtitles if content is missing
+            if (file.subtitles && file.subtitles.length > 0) {
+                return file.subtitles.map((s, i) => `${i + 1}\n${s.time}\n${s.text}`).join('\n\n');
+            }
+            return '';
+        }
+
         function setOriginal(key) {
             origFileKey = key;
             const file = fileStore[key];
-            origBlocks = parseSRT(file.content);
+            origBlocks = parseSRT(getFileContent(key));
             document.getElementById('summary-orig-name').textContent = file.path;
 
             comparisonActive = false;
@@ -490,13 +522,13 @@
 
             updateCompareBtn();
             renderFileList();
-            saveState();
+            saveCompareState();
         }
 
         function setTranslated(key) {
             transFileKey = key;
             const file = fileStore[key];
-            transBlocks = parseSRT(file.content);
+            transBlocks = parseSRT(getFileContent(key));
             document.getElementById('summary-trans-name').textContent = file.path;
 
             comparisonActive = false;
@@ -520,7 +552,7 @@
         }
 
         async function clearAllDataPrompt() {
-            if (confirm('Yüklenen tüm dosyalar silinecektir. Emin misiniz?')) {
+            if (confirm('Yüklenen tüm dosyalar silinecektir. Emin misiniz? (Bu işlem editördeki dosyaları da kaldıracaktır.)')) {
                 fileStore = {};
                 origFileKey = null;
                 transFileKey = null;
@@ -533,7 +565,8 @@
                 document.getElementById('stats-summary').classList.add('hidden');
                 updateCompareBtn();
                 renderFileList();
-                saveState();
+                await saveSharedFileStore();
+                await saveCompareState();
             }
         }
 
@@ -697,32 +730,58 @@
         }
 
         // ── STATE PERSISTENCE ─────────────────────────────────────────────
-        async function saveState() {
-            const state = {
-                fileStore,
+        // Save files to the shared fileStore (same key as index.html)
+        async function saveSharedFileStore() {
+            await setStorageItem('fileStore', fileStore);
+        }
+
+        // Save compare-specific state (selections, filter) separately
+        async function saveCompareState() {
+            await setStorageItem('compareApp2', {
                 collapsedFolders: Array.from(collapsedFolders),
                 origFileKey,
                 transFileKey,
                 activeFilter,
                 comparisonActive
-            };
-            await setStorageItem('compareApp2', state); // use new key so it doesn't conflict with old state structure
+            });
+        }
+
+        // Legacy alias so existing calls work
+        async function saveState() {
+            await saveSharedFileStore();
+            await saveCompareState();
         }
 
         async function loadState() {
-            const state = await getStorageItem('compareApp2');
-            if (state) {
-                if (state.fileStore) fileStore = state.fileStore;
-                if (state.collapsedFolders) collapsedFolders = new Set(state.collapsedFolders);
-                if (state.activeFilter) activeFilter = state.activeFilter;
-
-                if (state.origFileKey && fileStore[state.origFileKey]) setOriginal(state.origFileKey);
-                if (state.transFileKey && fileStore[state.transFileKey]) setTranslated(state.transFileKey);
-
-                if (state.comparisonActive && origFileKey && transFileKey) checkAndRenderComparison();
-
-                renderFileList();
+            // Load shared file store (same as index.html)
+            const sharedStore = await getStorageItem('fileStore');
+            if (sharedStore && Object.keys(sharedStore).length > 0) {
+                // Ensure each entry has a `content` field for SRT parsing
+                Object.keys(sharedStore).forEach(key => {
+                    const entry = sharedStore[key];
+                    if (!entry.content && entry.subtitles && entry.subtitles.length > 0) {
+                        // Reconstruct raw SRT content from subtitles for compare parsing
+                        entry.content = entry.subtitles.map((s, i) =>
+                            `${i + 1}\n${s.time}\n${s.text}`
+                        ).join('\n\n');
+                    }
+                });
+                fileStore = sharedStore;
             }
+
+            // Load compare-specific state
+            const compareState = await getStorageItem('compareApp2');
+            if (compareState) {
+                if (compareState.collapsedFolders) collapsedFolders = new Set(compareState.collapsedFolders);
+                if (compareState.activeFilter) activeFilter = compareState.activeFilter;
+
+                if (compareState.origFileKey && fileStore[compareState.origFileKey]) setOriginal(compareState.origFileKey);
+                if (compareState.transFileKey && fileStore[compareState.transFileKey]) setTranslated(compareState.transFileKey);
+
+                if (compareState.comparisonActive && origFileKey && transFileKey) checkAndRenderComparison();
+            }
+
+            renderFileList();
         }
 
         window.addEventListener('DOMContentLoaded', loadState);
