@@ -686,7 +686,7 @@
         }
 
         function parseTimeRange(timeStr) {
-            const parts = timeStr.split(/\s*-->\s */);
+            const parts = timeStr.split('-->').map(s => s.trim());
             if (parts.length !== 2) return { valid: false, error: 'Format hatası: "-->" bulunamadı' };
             const startMs = parseSingleTimestamp(parts[0]);
             const endMs = parseSingleTimestamp(parts[1]);
