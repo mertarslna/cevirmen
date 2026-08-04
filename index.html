@@ -149,8 +149,8 @@
     <div class="flex flex-1 overflow-hidden">
 
         <!-- File Sidebar -->
-        <aside id="file-sidebar"
-            class="w-64 shrink-0 bg-slate-800/60 border-r border-slate-700 flex flex-col overflow-hidden">
+        <aside id="file-sidebar" style="width: 22rem;"
+            class="shrink-0 bg-slate-800/60 border-r border-slate-700 flex flex-col overflow-hidden">
 
             <div class="p-3 border-b border-slate-700 flex flex-col gap-2">
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Yüklenen Dosyalar</p>
@@ -193,6 +193,9 @@
                 </button>
             </div>
         </aside>
+
+        <!-- Sidebar Resizer Handle -->
+        <div id="sidebar-resizer" class="w-1.5 cursor-col-resize hover:bg-indigo-500/50 active:bg-indigo-600 transition-colors z-10 shrink-0 border-r border-slate-700/50 bg-slate-800"></div>
 
         <!-- Main content -->
         <main class="flex-1 overflow-y-auto p-6 flex flex-col">
@@ -298,12 +301,66 @@
         window.addEventListener('DOMContentLoaded', loadEditorState);
 
         // ── SIDEBAR ──────────────────────────────────────────────────────
+        let currentSidebarWidth = '22rem';
+        
         function toggleSidebar() {
             const sb = document.getElementById('file-sidebar');
+            const resizer = document.getElementById('sidebar-resizer');
+            
+            // Re-enable transition just for the toggle animation
+            sb.style.transition = 'width 0.3s ease, opacity 0.3s ease';
+            
             sidebarOpen = !sidebarOpen;
-            sb.style.width = sidebarOpen ? '16rem' : '0';
-            sb.style.opacity = sidebarOpen ? '1' : '0';
+            
+            if (sidebarOpen) {
+                sb.style.width = currentSidebarWidth;
+                sb.style.opacity = '1';
+                resizer.style.display = 'block';
+            } else {
+                currentSidebarWidth = sb.style.width || '22rem';
+                sb.style.width = '0';
+                sb.style.opacity = '0';
+                resizer.style.display = 'none';
+            }
+            
+            // Clean up transition after animation so resize is instant
+            setTimeout(() => {
+                sb.style.transition = '';
+            }, 300);
         }
+
+        // ── SIDEBAR RESIZE LOGIC ──────────────────────────────────────────
+        const resizer = document.getElementById('sidebar-resizer');
+        const sidebar = document.getElementById('file-sidebar');
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            document.body.classList.add('select-none'); // Prevent text selection
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            // Calculate new width (mouse X position minus sidebar's starting X)
+            const sidebarRect = sidebar.getBoundingClientRect();
+            let newWidth = e.clientX - sidebarRect.left;
+            
+            // Set constraints
+            if (newWidth < 150) newWidth = 150;
+            if (newWidth > 600) newWidth = 600;
+            
+            sidebar.style.width = newWidth + 'px';
+            currentSidebarWidth = newWidth + 'px';
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                document.body.style.cursor = '';
+                document.body.classList.remove('select-none');
+            }
+        });
 
         // ── DROP ZONE ────────────────────────────────────────────────────
         async function handleDropZone(e) {
@@ -497,14 +554,33 @@
             const sortedNodes = sortTree(rootTree);
 
             const container = document.createElement('div');
-            container.className = 'space-y-1';
+            container.className = 'flex gap-2 items-start';
+            
+            const col1 = document.createElement('div');
+            col1.className = 'flex-1 flex flex-col space-y-1 min-w-0';
+            
+            const col2 = document.createElement('div');
+            col2.className = 'flex-1 flex flex-col space-y-1 min-w-0';
+            
+            container.appendChild(col1);
+            container.appendChild(col2);
 
-            sortedNodes.forEach(node => renderNode(node, container, 0));
+            sortedNodes.forEach((node, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex flex-col space-y-1';
+                renderNode(node, wrapper, 0);
+                
+                if (index % 2 === 0) {
+                    col1.appendChild(wrapper);
+                } else {
+                    col2.appendChild(wrapper);
+                }
+            });
             list.appendChild(container);
         }
 
         function renderNode(node, parentEl, depth) {
-            const indentPx = depth * 10 + 4; // 4px base, 10px per depth level
+            const indentPx = depth > 0 ? (depth * 10 + 4) : 4; // 4px base, 10px per depth level
 
             if (node.type === 'folder') {
                 const isCollapsed = collapsedFolders.has(node.fullPath);
