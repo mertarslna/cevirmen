@@ -812,8 +812,8 @@
 
         // Save compare-specific state (selections, filter) separately
         async function saveCompareState() {
+            await setStorageItem('collapsedFolders', Array.from(collapsedFolders));
             await setStorageItem('compareApp2', {
-                collapsedFolders: Array.from(collapsedFolders),
                 origFileKey,
                 transFileKey,
                 activeFilter,
@@ -846,8 +846,15 @@
 
             // Load compare-specific state
             const compareState = await getStorageItem('compareApp2');
+            const storedCollapsed = await getStorageItem('collapsedFolders');
+
+            if (storedCollapsed && Array.isArray(storedCollapsed)) {
+                collapsedFolders = new Set(storedCollapsed);
+            } else if (compareState && compareState.collapsedFolders) {
+                collapsedFolders = new Set(compareState.collapsedFolders);
+            }
+
             if (compareState) {
-                if (compareState.collapsedFolders) collapsedFolders = new Set(compareState.collapsedFolders);
                 if (compareState.activeFilter) activeFilter = compareState.activeFilter;
 
                 if (compareState.origFileKey && fileStore[compareState.origFileKey]) setOriginal(compareState.origFileKey);
