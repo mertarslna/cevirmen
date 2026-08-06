@@ -5,66 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SRT Karşılaştırma & Zaman Damgası Kontrolü</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
     <script src="storage.js"></script>
-    <style>
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #0f172a;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-
-        #file-sidebar {
-            transition: width 0.3s ease, opacity 0.3s ease;
-        }
-
-        .file-item {
-            transition: background 0.15s, border-color 0.15s;
-        }
-
-        .file-item:hover {
-            background: rgba(99, 102, 241, 0.12);
-            border-color: #6366f1;
-        }
-
-        .file-item.active-orig {
-            background: rgba(79, 70, 229, 0.2);
-            border-color: #6366f1;
-        }
-
-        .file-item.active-trans {
-            background: rgba(139, 92, 246, 0.2);
-            border-color: #8b5cf6;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(6px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .fade-in {
-            animation: fadeIn 0.25s ease;
-        }
-    </style>
 </head>
 
 <body class="bg-slate-900 text-slate-100 h-screen overflow-hidden flex flex-col font-sans">
@@ -106,7 +48,7 @@
         <aside id="file-sidebar" style="width: 22rem;"
             class="shrink-0 bg-slate-800/60 border-r border-slate-700 flex flex-col overflow-hidden">
             <div class="p-3 border-b border-slate-700 flex flex-col gap-2">
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Karşılaştırma Dosyaları</p>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Dosyalar</p>
                 <div class="flex gap-2">
                     <input type="file" id="srt-files-input" accept=".srt" multiple class="hidden"
                         onchange="handleFilesFromInput(event)">
@@ -117,7 +59,7 @@
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
-                        Dosya
+                        Dosya Ekle
                     </button>
                     <button onclick="document.getElementById('srt-folder-input').click()"
                         class="flex-1 bg-slate-700 hover:bg-indigo-600 text-slate-200 hover:text-white text-xs px-2 py-1.5 rounded transition flex items-center justify-center gap-1">
@@ -125,19 +67,19 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
                         </svg>
-                        Klasör
+                        Klasör Ekle
                     </button>
                 </div>
             </div>
-            <div id="file-list" class="flex-1 overflow-y-auto p-2 space-y-1 pb-16">
+            <div id="file-list" class="flex-1 overflow-y-auto p-2 space-y-1">
                 <p class="text-xs text-slate-500 text-center mt-6 px-2">Dosyalarınızı sürükleyin veya yukarıdan ekleyin.
                 </p>
             </div>
-            <div
-                class="p-2 border-t border-slate-700 flex justify-between items-center text-xs px-3 bg-slate-800/90 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+            <div class="p-2 border-t border-slate-700 flex justify-between items-center text-xs px-3">
                 <p id="file-count" class="text-slate-500"></p>
                 <button onclick="clearAllDataPrompt()"
-                    class="text-slate-500 hover:text-red-400 transition underline underline-offset-2">Temizle</button>
+                    class="text-slate-500 hover:text-red-400 transition underline underline-offset-2"
+                    title="Tüm yüklü dosyaları ve verileri sıfırla">Temizle</button>
             </div>
         </aside>
 
@@ -422,6 +364,7 @@
         function buildFileTree() {
             const root = { name: '', fullPath: '', type: 'folder', children: {} };
             Object.keys(fileStore).forEach(key => {
+                const entry = fileStore[key];
                 const parts = key.split('/');
                 let current = root;
                 for (let i = 0; i < parts.length; i++) {
@@ -430,7 +373,13 @@
                     const currentPath = current.fullPath ? current.fullPath + '/' + part : part;
 
                     if (isFile) {
-                        current.children[part] = { name: part, fullPath: key, type: 'file', key: key };
+                        current.children[part] = {
+                            name: part,
+                            fullPath: key,
+                            type: 'file',
+                            key: key,
+                            subtitlesCount: entry.subtitles ? entry.subtitles.length : 0
+                        };
                     } else {
                         if (!current.children[part]) {
                             current.children[part] = { name: part, fullPath: currentPath, type: 'folder', children: {} };
@@ -464,7 +413,7 @@
 
             const keys = Object.keys(fileStore);
             if (keys.length === 0) {
-                list.innerHTML = '<p class="text-xs text-slate-500 text-center mt-6 px-2">Dosyalarınızı sürükleyin veya yukarıdan ekleyin.</p>';
+                list.innerHTML = '<p id="no-files-msg" class="text-xs text-slate-500 text-center mt-6 px-2">Henüz dosya yüklenmedi.<br>Yukarıdaki butonları kullanın.</p>';
                 countEl.textContent = '';
                 return;
             }
@@ -553,19 +502,23 @@
                 if (isOrig) extraClasses = 'active-orig';
                 else if (isTrans) extraClasses = 'active-trans';
 
-                fileItem.className = 'file-item border border-slate-700/60 rounded-lg px-2 py-1 flex items-center gap-1.5 group ' + extraClasses;
+                fileItem.className = 'file-item border border-slate-700/60 rounded-lg px-2 py-1.5 cursor-pointer flex items-center gap-1.5 group ' + extraClasses;
                 fileItem.style.paddingLeft = indentPx + 'px';
 
                 const iconColor = isOrig ? 'text-indigo-400' : (isTrans ? 'text-violet-400' : 'text-slate-500');
+                const nameColor = isOrig ? 'text-indigo-300 font-semibold' : (isTrans ? 'text-violet-300 font-semibold' : 'text-slate-300');
 
                 fileItem.innerHTML =
-                    '<svg class="w-4 h-4 shrink-0 ' + iconColor + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' +
-                    '<span class="text-[11px] truncate flex-1 text-slate-300" title="' + node.fullPath + '">' + node.name + '</span>' +
-                    '<div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">' +
-                    '<button class="bg-indigo-900/60 hover:bg-indigo-600 text-indigo-300 hover:text-white px-1.5 py-0.5 rounded text-[10px] font-bold border border-indigo-700/50" title="Orijinal (Kaynak) dosya olarak seç" data-action="set-orig">O</button>' +
-                    '<button class="bg-violet-900/60 hover:bg-violet-600 text-violet-300 hover:text-white px-1.5 py-0.5 rounded text-[10px] font-bold border border-violet-700/50" title="Çeviri (Hedef) dosya olarak seç" data-action="set-trans">Ç</button>' +
-                    '<button class="text-slate-500 hover:text-red-400 p-0.5 ml-0.5" title="Kaldır" data-action="del"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>' +
-                    '</div>';
+                    '<div class="flex-1 min-w-0 relative flex items-center gap-1.5 h-full">' +
+                        '<svg class="w-4 h-4 shrink-0 ' + iconColor + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' +
+                        '<span class="text-xs truncate w-full ' + nameColor + '" title="' + node.fullPath + '">' + node.name + '</span>' +
+                        '<span class="text-xs text-slate-500 shrink-0">' + (node.subtitlesCount !== undefined ? node.subtitlesCount : '') + '</span>' +
+                        '<div class="absolute inset-0 -mx-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 bg-slate-800/80 backdrop-blur-sm z-10">' +
+                            '<button class="bg-indigo-900/80 hover:bg-indigo-600 text-indigo-300 hover:text-white px-2 py-0.5 rounded text-[10px] font-medium border border-indigo-700/50" title="Orijinal (Kaynak) dosya olarak seç" data-action="set-orig">Orijinal</button>' +
+                            '<button class="bg-violet-900/80 hover:bg-violet-600 text-violet-300 hover:text-white px-2 py-0.5 rounded text-[10px] font-medium border border-violet-700/50" title="Çeviri (Hedef) dosya olarak seç" data-action="set-trans">Hedef</button>' +
+                        '</div>' +
+                    '</div>' +
+                    '<button class="del-btn relative z-20 text-slate-600 hover:text-red-400 shrink-0 p-0.5 ml-0.5 rounded" title="Kaldır" data-action="del"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>';
 
                 fileItem.querySelector('[data-action="set-orig"]').addEventListener('click', (e) => { e.stopPropagation(); setOriginal(node.key); });
                 fileItem.querySelector('[data-action="set-trans"]').addEventListener('click', (e) => { e.stopPropagation(); setTranslated(node.key); });
@@ -779,7 +732,7 @@
                 card.className = 'bg-slate-800 border ' + (hasIssues ? 'border-amber-800/80 bg-slate-800/90' : 'border-slate-700/80') + ' rounded-xl p-4 space-y-3 shadow-md fade-in';
 
                 const statusBadge = hasIssues
-                    ? `<span class="bg-amber-950/80 text-amber-300 text-xs px-2.5 py-1 rounded-md font-semibold border border-amber-700/60 flex items-center gap-1"><svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>⚠️ ${blockIssues.length} Sorun</span>`
+                    ? `<span class="bg-amber-950/80 text-amber-300 text-xs px-2.5 py-1 rounded-md font-semibold border border-amber-700/60 flex items-center gap-1">⚠️ ${blockIssues.length} Sorun</span>`
                     : `<span class="bg-emerald-950/60 text-emerald-300 text-xs px-2.5 py-1 rounded-md font-semibold border border-emerald-800/50 flex items-center gap-1"><svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Uyumlu</span>`;
 
                 let issuesHTML = '';
