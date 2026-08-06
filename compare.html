@@ -87,6 +87,23 @@
         <div id="sidebar-resizer"
             class="w-1.5 cursor-col-resize hover:bg-indigo-500/50 active:bg-indigo-600 transition-colors z-10 shrink-0 border-r border-slate-700/50 bg-slate-800">
         </div>
+        <script>
+            (function() {
+                const savedWidth = localStorage.getItem('sidebarWidth') || '22rem';
+                const isOpen = localStorage.getItem('sidebarOpen') !== 'false';
+                const sb = document.getElementById('file-sidebar');
+                const resizer = document.getElementById('sidebar-resizer');
+                if (sb && resizer) {
+                    if (!isOpen) {
+                        sb.style.width = '0';
+                        sb.style.opacity = '0';
+                        resizer.style.display = 'none';
+                    } else {
+                        sb.style.width = savedWidth;
+                    }
+                }
+            })();
+        </script>
 
         <!-- Main Content -->
         <main class="flex-1 overflow-y-auto p-6 flex flex-col relative" id="main-dropzone"
@@ -177,7 +194,7 @@
     <script>
         let fileStore = {};
         let collapsedFolders = new Set();
-        let sidebarOpen = true;
+        let sidebarOpen = localStorage.getItem('sidebarOpen') !== 'false';
 
         let origFileKey = null;
         let transFileKey = null;
@@ -187,7 +204,7 @@
         let comparisonActive = false;
 
         // ── SIDEBAR & UI ──────────────────────────────────────────────────
-        let currentSidebarWidth = '22rem';
+        let currentSidebarWidth = localStorage.getItem('sidebarWidth') || '22rem';
 
         function toggleSidebar() {
             const sb = document.getElementById('file-sidebar');
@@ -197,6 +214,7 @@
             sb.style.transition = 'width 0.3s ease, opacity 0.3s ease';
 
             sidebarOpen = !sidebarOpen;
+            localStorage.setItem('sidebarOpen', sidebarOpen);
 
             if (sidebarOpen) {
                 sb.style.width = currentSidebarWidth;
@@ -245,6 +263,7 @@
                 isResizing = false;
                 document.body.style.cursor = '';
                 document.body.classList.remove('select-none');
+                localStorage.setItem('sidebarWidth', currentSidebarWidth);
             }
         });
 
