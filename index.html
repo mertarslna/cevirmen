@@ -269,7 +269,7 @@
             <div id="editor-section" class="hidden space-y-4">
                 <div class="flex justify-between items-center mb-4 bg-slate-800 p-3 rounded-lg border border-slate-700">
                     <span id="subtitle-count" class="text-sm font-medium text-slate-300"></span>
-                    <span class="text-xs text-slate-500">* Standart altyazı kuralı gereği satırların 26 karakteri
+                    <span class="text-xs text-slate-500">* Standart altyazı kuralı gereği satırların 27 karakteri
                         aşmaması önerilir.</span>
                 </div>
                 <div id="subtitles-container" class="space-y-4"></div>
@@ -279,7 +279,7 @@
     </div>
 
     <script>
-        const CHAR_LIMIT = 26;
+        const CHAR_LIMIT = 27;
         let fileStore = {};   // { relPath: { path, name, subtitles } }
         let activeFile = null;
         let sidebarOpen = localStorage.getItem('sidebarOpen') !== 'false';
@@ -1286,7 +1286,7 @@
             if (warnStats.total > 0) {
                 var confirmMsg = '⚠️ Bu altyazı dosyasında tespit edilen uyarılar / hatalar bulunmaktadır:\n';
                 if (warnStats.charLimitWarningsCount > 0) {
-                    confirmMsg += ' • ' + warnStats.charLimitWarningsCount + ' satırda karakter sınırı (26 karakter) aşıldı.\n';
+                    confirmMsg += ' • ' + warnStats.charLimitWarningsCount + ' satırda karakter sınırı (27 karakter) aşıldı.\n';
                 }
                 if (warnStats.grammarWarningsCount > 0) {
                     confirmMsg += ' • ' + warnStats.grammarWarningsCount + ' adet imla / noktalama uyarısı mevcut.\n';
