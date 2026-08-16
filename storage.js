@@ -20,19 +20,19 @@ function openDB() {
 
         const request = window.indexedDB.open(DB_NAME, DB_VERSION);
 
-        request.onupgradeneeded = function(e) {
+        request.onupgradeneeded = function (e) {
             const db = e.target.result;
             if (!db.objectStoreNames.contains(STORE_NAME)) {
                 db.createObjectStore(STORE_NAME);
             }
         };
 
-        request.onsuccess = function(e) {
+        request.onsuccess = function (e) {
             dbInstance = e.target.result;
             resolve(dbInstance);
         };
 
-        request.onerror = function(e) {
+        request.onerror = function (e) {
             console.error('IndexedDB açılırken hata oluştu:', e.target.error);
             resolve(null);
         };
@@ -66,7 +66,7 @@ async function setStorageItem(key, data) {
         console.error('Storage Save Exception:', err);
         try {
             localStorage.setItem(key, JSON.stringify(data));
-        } catch (e) {}
+        } catch (e) { }
         return false;
     }
 }
