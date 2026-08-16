@@ -7,6 +7,22 @@
     <title>SRT Altyazı Düzenleyici & Çevirmen</title>
     <link rel="stylesheet" href="styles.css">
     <script src="storage.js"></script>
+    <style>
+        /* Polyfill for missing Tailwind classes used by the dictionary modal */
+        #dictionary-modal.fixed { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
+        .z-\[100\] { z-index: 100; }
+        .bg-black\/60 { background-color: rgba(0, 0, 0, 0.6); }
+        .backdrop-blur-sm { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+        .w-\[400px\] { width: 400px; max-width: 90vw; }
+        .scale-95 { transform: scale(0.95); }
+        .scale-100 { transform: scale(1); }
+        .opacity-0 { opacity: 0; }
+        .opacity-100 { opacity: 1; }
+        .transition-all { transition: all 0.2s ease-in-out; }
+        .h-48 { height: 12rem; max-height: 50vh; }
+        .overflow-y-auto { overflow-y: auto; }
+        .space-y-1 > :not([hidden]) ~ :not([hidden]) { --tw-space-y-reverse: 0; margin-top: calc(0.25rem * calc(1 - var(--tw-space-y-reverse))); margin-bottom: calc(0.25rem * var(--tw-space-y-reverse)); }
+    </style>
 </head>
 
 <body class="bg-slate-900 text-slate-100 h-screen overflow-hidden flex flex-col font-sans">
@@ -30,6 +46,14 @@
                 </svg>
                 Karşılaştırma Yap
             </a>
+            <button onclick="openDictionaryModal()"
+                class="p-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 transition text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-medium border border-slate-600/50 ml-2"
+                title="Özel İsimler Sözlüğü">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                Sözlük
+            </button>
             <span id="save-status"
                 class="hidden flex items-center gap-1.5 text-xs text-emerald-400 font-medium transition-all ml-2"></span>
         </div>
@@ -731,15 +755,21 @@
                 }
 
                 // 2. Virgülden (, ;) sonra büyük harf (Örn: "Gittim, Geldim")
-                const commaRegex = /([,;])\s+([A-ZÇĞİÖŞÜ])/g;
+                const commaRegex = /([,;])\s+([A-ZÇĞİÖŞÜ]\S*)/g;
                 while ((match = commaRegex.exec(line)) !== null) {
                     const punct = match[1];
-                    const snippetStart = Math.max(0, match.index - 12);
-                    const snippetEnd = Math.min(line.length, match.index + match[0].length + 12);
-                    const snippet = line.substring(snippetStart, snippetEnd);
-                    issues.push({
-                        message: `Virgülden (${punct}) sonra büyük harfle başlanmış: "...${snippet.trim()}..."`
-                    });
+                    const wordAfterPunct = match[2].replace(/[.,;:!?]+$/, '');
+                    
+                    const isAllowed = (typeof customDictionary !== 'undefined') && customDictionary.some(w => w.toLowerCase() === wordAfterPunct.toLowerCase());
+                    
+                    if (!isAllowed) {
+                        const snippetStart = Math.max(0, match.index - 12);
+                        const snippetEnd = Math.min(line.length, match.index + match[0].length + 12);
+                        const snippet = line.substring(snippetStart, snippetEnd);
+                        issues.push({
+                            message: `Virgülden (${punct}) sonra büyük harfle başlanmış: "...${snippet.trim()}..."`
+                        });
+                    }
                 }
 
                 // 3. Noktadan (. ! ? ...) veya virgülden (, ;) sonra boşluk bırakılmaması (Örn: "Merhaba.Nasılsın", "Gittim,geldim")
@@ -791,9 +821,14 @@
 
                 // Satır sonu virgül (, ;) + Alt konuşma satırı büyük harf
                 if (/[,;]/.test(lastCharCurr) && /[A-ZÇĞİÖŞÜ]/.test(firstCharNext)) {
-                    issues.push({
-                        message: `Konuşma satırı sonunda (${lastCharCurr}) sonrası alt satıra büyük harfle başlanmış: "${currLine}" ➔ "${nextLine}"`
-                    });
+                    const firstWordNextLine = cleanedNext.split(/\s+/)[0].replace(/[.,;:!?]+$/, '');
+                    const isAllowed = (typeof customDictionary !== 'undefined') && customDictionary.some(w => w.toLowerCase() === firstWordNextLine.toLowerCase());
+                    
+                    if (!isAllowed) {
+                        issues.push({
+                            message: `Konuşma satırı sonunda (${lastCharCurr}) sonrası alt satıra büyük harfle başlanmış: "${currLine}" ➔ "${nextLine}"`
+                        });
+                    }
                 }
             }
 
@@ -841,7 +876,12 @@
                 if (/[.!?]/.test(lastCharCurr) && /[a-zçğıöşü]/.test(firstCharNext)) {
                     warnings[i + 1] = `Bir önceki altyazı bloğu (#${subtitles[i].index}) noktalama işareti (${lastCharCurr}) ile bittiği halde bu blok küçük harfle başlamış.`;
                 } else if (/[,;]/.test(lastCharCurr) && /[A-ZÇĞİÖŞÜ]/.test(firstCharNext)) {
-                    warnings[i + 1] = `Bir önceki altyazı bloğu (#${subtitles[i].index}) virgül (${lastCharCurr}) ile bittiği halde bu blok büyük harfle başlamış.`;
+                    const firstWordNextLine = cleanedNext.split(/\s+/)[0].replace(/[.,;:!?]+$/, '');
+                    const isAllowed = (typeof customDictionary !== 'undefined') && customDictionary.some(w => w.toLowerCase() === firstWordNextLine.toLowerCase());
+                    
+                    if (!isAllowed) {
+                        warnings[i + 1] = `Bir önceki altyazı bloğu (#${subtitles[i].index}) virgül (${lastCharCurr}) ile bittiği halde bu blok büyük harfle başlamış.`;
+                    }
                 }
             }
             return warnings;
@@ -1124,7 +1164,121 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
+
+        // ── DICTIONARY ────────────────────────────────────────────────────
+        let customDictionary = [];
+
+        function loadDictionary() {
+            try {
+                const stored = localStorage.getItem('cevirmen_dictionary');
+                if (stored) {
+                    customDictionary = JSON.parse(stored);
+                }
+            } catch (e) {
+                console.error("Dictionary load error", e);
+            }
+        }
+
+        function saveDictionary() {
+            localStorage.setItem('cevirmen_dictionary', JSON.stringify(customDictionary));
+        }
+
+        function openDictionaryModal() {
+            loadDictionary();
+            renderDictionary();
+            const modal = document.getElementById('dictionary-modal');
+            const content = document.getElementById('dictionary-modal-content');
+            modal.classList.remove('hidden');
+            // Animate in
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+            document.getElementById('dict-input').focus();
+        }
+
+        function closeDictionaryModal() {
+            const modal = document.getElementById('dictionary-modal');
+            const content = document.getElementById('dictionary-modal-content');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200); // Wait for transition
+            
+            // Trigger auto save to re-render warnings
+            triggerAutoSave();
+            if(activeFile) {
+                renderSubtitles(getActiveSubtitles());
+            }
+        }
+
+        function renderDictionary() {
+            const list = document.getElementById('dict-list');
+            list.innerHTML = '';
+            if (customDictionary.length === 0) {
+                list.innerHTML = '<p class="text-xs text-slate-500 text-center mt-6">Henüz kelime eklenmemiş.</p>';
+                return;
+            }
+            customDictionary.forEach((word, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center text-sm text-slate-300 py-1.5 px-2 hover:bg-slate-800 rounded transition group';
+                div.innerHTML = `
+                    <span>${word}</span>
+                    <button onclick="removeDictWord(${index})" class="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1" title="Sil">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function addDictWord() {
+            const input = document.getElementById('dict-input');
+            const word = input.value.trim();
+            if (word && !customDictionary.includes(word)) {
+                customDictionary.push(word);
+                saveDictionary();
+                renderDictionary();
+            }
+            input.value = '';
+            input.focus();
+        }
+
+        function removeDictWord(index) {
+            customDictionary.splice(index, 1);
+            saveDictionary();
+            renderDictionary();
+        }
+        
+        // Initial load
+        loadDictionary();
     </script>
+    
+    <!-- Dictionary Modal -->
+    <div id="dictionary-modal" class="hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-[400px] flex flex-col overflow-hidden transform transition-all duration-200 scale-95 opacity-0" id="dictionary-modal-content">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/80">
+                <h3 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                    Özel İsimler Sözlüğü
+                </h3>
+                <button onclick="closeDictionaryModal()" class="text-slate-400 hover:text-white transition p-1 rounded-md hover:bg-slate-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-4 flex flex-col gap-4">
+                <p class="text-xs text-slate-400">Buraya eklediğiniz kelimeler virgülden sonra büyük harfle başlasa dahi imla uyarısı vermez.</p>
+                <div class="flex gap-2">
+                    <input type="text" id="dict-input" placeholder="Özel isim girin..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all" onkeypress="if(event.key === 'Enter') addDictWord()">
+                    <button onclick="addDictWord()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-md">Ekle</button>
+                </div>
+                <div class="bg-slate-900/50 border border-slate-700/60 rounded-lg h-48 overflow-y-auto p-2 space-y-1" id="dict-list">
+                    <!-- List items will be generated here -->
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
