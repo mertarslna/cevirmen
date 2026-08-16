@@ -61,6 +61,20 @@
         <div id="action-buttons" class="hidden flex-wrap gap-3 items-center">
             <span id="global-progress" class="text-xs text-emerald-400 font-medium hidden">Çevriliyor: %0</span>
 
+            <!-- Warning Navigator -->
+            <div id="warning-navigator" class="hidden flex items-center border border-slate-700 rounded-lg overflow-hidden bg-slate-900 shadow-md">
+                <div class="px-3 py-1.5 flex items-center gap-1.5 text-amber-400 border-r border-slate-700 cursor-pointer hover:bg-slate-800 transition select-none" onclick="navigateWarning(1)" title="Sonraki Uyarıya Git">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span id="warning-nav-text" class="text-sm font-medium whitespace-nowrap">0 Uyarı</span>
+                </div>
+                <button onclick="navigateWarning(-1)" class="px-2.5 py-1.5 hover:bg-slate-800 text-slate-300 hover:text-white transition border-r border-slate-700" title="Önceki Uyarı">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                </button>
+                <button onclick="navigateWarning(1)" class="px-2.5 py-1.5 hover:bg-slate-800 text-slate-300 hover:text-white transition" title="Sonraki Uyarı">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+            </div>
+
             <div
                 class="flex items-center border border-slate-700 rounded-lg overflow-hidden bg-slate-900 focus-within:border-indigo-500 transition-colors shadow-md">
                 <select id="target-lang" onchange="triggerAutoSave()"
@@ -209,6 +223,7 @@
         let activeFile = null;
         let sidebarOpen = localStorage.getItem('sidebarOpen') !== 'false';
         let collapsedFolders = new Set();
+        let currentWarningIndex = -1;
 
         // ── AUTO-SAVE & PERSISTENCE ───────────────────────────────────────
         let saveTimeout = null;
@@ -718,10 +733,22 @@
                 return '<div class="flex justify-between items-center text-xs text-slate-400 bg-slate-900/50 px-2 py-1.5 rounded border ' + (over ? 'border-red-900/50 bg-red-900/10' : 'border-slate-800') + '">' +
                     '<span class="text-slate-300 truncate max-w-[250px]">Satır ' + (i + 1) + ' ' + warn + '</span>' +
                     '<div class="flex gap-3 shrink-0">' +
-                    '<span class="' + (over ? 'text-red-300' : '') + '">Karakter: <strong class="' + (over ? 'text-red-400 font-bold' : 'text-slate-200') + '">' + s.charCount + '</strong></span>' +
+                    '<span class="' + (over ? 'text-red-300' : '') + '">Karakter: <strong class="' + (over ? 'char-warning text-red-400 font-bold' : 'text-slate-200') + '">' + s.charCount + '</strong></span>' +
                     '<span>Kelime: <strong class="text-slate-200">' + s.wordCount + '</strong></span>' +
                     '</div></div>';
             }).join('');
+        }
+
+        function isWordAllowed(word) {
+            if (typeof customDictionary === 'undefined') return false;
+            const targetWord = word.toLowerCase();
+            const strippedWord = targetWord.split(/['’´]/)[0];
+            return customDictionary.some(w => {
+                const dictWord = w.toLowerCase();
+                if (strippedWord === dictWord) return true;
+                if (dictWord.length >= 3 && targetWord.startsWith(dictWord)) return true;
+                return false;
+            });
         }
 
         // ── GRAMMAR & PUNCTUATION CHECKER ─────────────────────────────────
@@ -760,7 +787,7 @@
                     const punct = match[1];
                     const wordAfterPunct = match[2].replace(/[.,;:!?]+$/, '');
                     
-                    const isAllowed = (typeof customDictionary !== 'undefined') && customDictionary.some(w => w.toLowerCase() === wordAfterPunct.toLowerCase());
+                    const isAllowed = isWordAllowed(wordAfterPunct);
                     
                     if (!isAllowed) {
                         const snippetStart = Math.max(0, match.index - 12);
@@ -822,7 +849,7 @@
                 // Satır sonu virgül (, ;) + Alt konuşma satırı büyük harf
                 if (/[,;]/.test(lastCharCurr) && /[A-ZÇĞİÖŞÜ]/.test(firstCharNext)) {
                     const firstWordNextLine = cleanedNext.split(/\s+/)[0].replace(/[.,;:!?]+$/, '');
-                    const isAllowed = (typeof customDictionary !== 'undefined') && customDictionary.some(w => w.toLowerCase() === firstWordNextLine.toLowerCase());
+                    const isAllowed = isWordAllowed(firstWordNextLine);
                     
                     if (!isAllowed) {
                         issues.push({
@@ -849,7 +876,7 @@
                 `</li>`
             ).join('');
 
-            return `<div class="bg-amber-950/40 border border-amber-800/60 rounded-lg p-2.5 text-xs text-amber-200/90 space-y-1.5 mt-2 fade-in">` +
+            return `<div class="grammar-warning bg-amber-950/40 border border-amber-800/60 rounded-lg p-2.5 text-xs text-amber-200/90 space-y-1.5 mt-2 fade-in">` +
                 `<div class="flex items-center gap-1.5 font-semibold text-amber-400">` +
                 `<svg class="w-4 h-4 shrink-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">` +
                 `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>` +
@@ -877,7 +904,7 @@
                     warnings[i + 1] = `Bir önceki altyazı bloğu (#${subtitles[i].index}) noktalama işareti (${lastCharCurr}) ile bittiği halde bu blok küçük harfle başlamış.`;
                 } else if (/[,;]/.test(lastCharCurr) && /[A-ZÇĞİÖŞÜ]/.test(firstCharNext)) {
                     const firstWordNextLine = cleanedNext.split(/\s+/)[0].replace(/[.,;:!?]+$/, '');
-                    const isAllowed = (typeof customDictionary !== 'undefined') && customDictionary.some(w => w.toLowerCase() === firstWordNextLine.toLowerCase());
+                    const isAllowed = isWordAllowed(firstWordNextLine);
                     
                     if (!isAllowed) {
                         warnings[i + 1] = `Bir önceki altyazı bloğu (#${subtitles[i].index}) virgül (${lastCharCurr}) ile bittiği halde bu blok büyük harfle başlamış.`;
@@ -889,6 +916,7 @@
 
         // ── RENDER SUBTITLES ──────────────────────────────────────────────
         function renderSubtitles(subtitles) {
+            currentWarningIndex = -1;
             const container = document.getElementById('subtitles-container');
             container.innerHTML = '';
             document.getElementById('subtitle-count').innerHTML =
@@ -951,6 +979,7 @@
                 container.appendChild(card);
                 setTimeout(function () { autoResizeTextarea(card.querySelector('#textarea-' + idx)); }, 0);
             });
+            setTimeout(updateWarningNavigator, 50);
         }
 
         // ── SUBTITLE OPS ──────────────────────────────────────────────────
@@ -964,6 +993,59 @@
             autoResizeTextarea(textarea);
             updateLineStatsUI(index);
             triggerAutoSave();
+        }
+
+        function updateWarningNavigator() {
+            const cards = Array.from(document.querySelectorAll('[id^="sub-card-"]')).filter(card => {
+                return card.querySelector('.char-warning, .grammar-warning') !== null;
+            });
+            const nav = document.getElementById('warning-navigator');
+            const textEl = document.getElementById('warning-nav-text');
+            
+            if (cards.length === 0) {
+                nav.classList.add('hidden');
+                nav.classList.remove('flex');
+                currentWarningIndex = -1;
+            } else {
+                nav.classList.remove('hidden');
+                nav.classList.add('flex');
+                if (currentWarningIndex >= cards.length) {
+                    currentWarningIndex = cards.length - 1;
+                }
+                const displayIndex = currentWarningIndex >= 0 ? currentWarningIndex + 1 : 0;
+                textEl.innerHTML = `${cards.length} Uyarı <span class="text-amber-500 text-xs ml-1 font-normal opacity-80">(${displayIndex}/${cards.length})</span>`;
+            }
+        }
+
+        function navigateWarning(direction) {
+            const cards = Array.from(document.querySelectorAll('[id^="sub-card-"]')).filter(card => {
+                return card.querySelector('.char-warning, .grammar-warning') !== null;
+            });
+            if (cards.length === 0) return;
+            
+            if (currentWarningIndex === -1 && direction === -1) {
+                currentWarningIndex = cards.length - 1;
+            } else if (currentWarningIndex === -1 && direction === 1) {
+                currentWarningIndex = 0;
+            } else {
+                currentWarningIndex += direction;
+            }
+            
+            if (currentWarningIndex >= cards.length) {
+                currentWarningIndex = 0;
+            } else if (currentWarningIndex < 0) {
+                currentWarningIndex = cards.length - 1;
+            }
+            
+            const targetCard = cards[currentWarningIndex];
+            targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            targetCard.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2', 'ring-offset-slate-900');
+            setTimeout(() => {
+                targetCard.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2', 'ring-offset-slate-900');
+            }, 1000);
+            
+            updateWarningNavigator();
         }
 
         function updateLineStatsUI(index) {
@@ -982,6 +1064,8 @@
                     nextBox.innerHTML = generateGrammarWarningsHTML(subs[index + 1].text, crossWarnings[index + 1]);
                 }
             }
+            
+            setTimeout(updateWarningNavigator, 50);
         }
 
         function addNewSubtitle() {
