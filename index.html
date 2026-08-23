@@ -21,6 +21,46 @@
             z-index: 100;
         }
 
+        /* Bulk delete confirmation modals — must sit above everything */
+        #bulk-confirm-1,
+        #bulk-confirm-2 {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 9999 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+
+        #bulk-confirm-1.hidden,
+        #bulk-confirm-2.hidden {
+            display: none !important;
+        }
+
+        /* Bulk delete button — site-consistent slate/rose ghost style */
+        #dict-bulk-delete-btn {
+            align-items: center;
+            gap: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #f87171;
+            border: 1px solid rgba(248, 113, 113, 0.25);
+            background: rgba(248, 113, 113, 0.07);
+            padding: 0.375rem 0.625rem;
+            border-radius: 0.5rem;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+
+        #dict-bulk-delete-btn:hover {
+            color: #fca5a5;
+            border-color: rgba(248, 113, 113, 0.45);
+            background: rgba(248, 113, 113, 0.14);
+        }
+
         .bg-black\/60 {
             background-color: rgba(0, 0, 0, 0.6);
         }
@@ -1406,6 +1446,9 @@
         function renderDictionary() {
             const list = document.getElementById('dict-list');
             list.innerHTML = '';
+            // Show/hide bulk delete button based on word count
+            const bulkBtn = document.getElementById('dict-bulk-delete-btn');
+            if (bulkBtn) bulkBtn.style.display = customDictionary.length === 0 ? 'none' : 'flex';
             if (customDictionary.length === 0) {
                 list.innerHTML = '<p class="text-xs text-slate-500 text-center mt-6">Henüz kelime eklenmemiş.</p>';
                 return;
@@ -1441,6 +1484,50 @@
             renderDictionary();
         }
 
+        // ── BULK DELETE ──────────────────────────────────────────────────────
+        function showBulkOverlay(id) {
+            const overlay = document.getElementById(id);
+            const content = document.getElementById(id + '-content');
+            overlay.classList.remove('hidden');
+            content.style.opacity = '0';
+            content.style.transform = 'scale(0.95)';
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    content.style.opacity = '1';
+                    content.style.transform = 'scale(1)';
+                });
+            });
+        }
+
+        function hideBulkOverlay(id, callback) {
+            const overlay = document.getElementById(id);
+            const content = document.getElementById(id + '-content');
+            content.style.opacity = '0';
+            content.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                if (callback) callback();
+            }, 200);
+        }
+
+        function bulkDeleteAll() {
+            if (customDictionary.length === 0) return;
+            document.getElementById('bulk-confirm-count').textContent = customDictionary.length;
+            showBulkOverlay('bulk-confirm-1');
+        }
+
+        function closeBulkConfirm1() {
+            hideBulkOverlay('bulk-confirm-1');
+        }
+
+        function finalBulkDelete() {
+            hideBulkOverlay('bulk-confirm-1', () => {
+                customDictionary = [];
+                saveDictionary();
+                renderDictionary();
+            });
+        }
+
         // Initial load
         loadDictionary();
     </script>
@@ -1458,13 +1545,25 @@
                     </svg>
                     Özel İsimler Sözlüğü
                 </h3>
-                <button onclick="closeDictionaryModal()"
-                    class="text-slate-400 hover:text-white transition p-1 rounded-md hover:bg-slate-700">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+                <div class="flex items-center gap-2">
+                    <!-- Bulk delete button -->
+                    <button id="dict-bulk-delete-btn" onclick="bulkDeleteAll()" title="Tümünü Sil"
+                        style="display:none"
+                        class="flex items-center gap-1.5 text-xs font-medium text-red-400 hover:text-red-300 border border-red-500/40 hover:border-red-400/70 bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1.5 rounded-lg transition-all">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Tümünü Sil
+                    </button>
+                    <button onclick="closeDictionaryModal()"
+                        class="text-slate-400 hover:text-white transition p-1 rounded-md hover:bg-slate-700">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
             </div>
             <div class="p-4 flex flex-col gap-4">
                 <p class="text-xs text-slate-400">Buraya eklediğiniz kelimeler virgülden sonra büyük harfle başlasa dahi
@@ -1483,6 +1582,40 @@
             </div>
         </div>
     </div>
+
+    <!-- Bulk Delete - First Confirmation -->
+    <div id="bulk-confirm-1" class="hidden">
+        <div id="bulk-confirm-1-content"
+            style="background:#1e293b; border:1px solid #334155; border-radius:0.75rem; box-shadow:0 25px 50px rgba(0,0,0,0.6); width:380px; max-width:90vw; overflow:hidden; transform:scale(0.95); opacity:0; transition:all 0.2s ease;">
+            <!-- Header -->
+            <div style="padding:1rem 1.25rem; border-bottom:1px solid #334155; display:flex; align-items:center; gap:0.75rem; background:rgba(248,113,113,0.06);">
+                <svg style="width:1.125rem;height:1.125rem;color:#f87171;flex-shrink:0" fill="none" stroke="#f87171" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+                <span style="font-size:0.8125rem;font-weight:600;color:#cbd5e1;">Tümünü Sil &mdash; Onay</span>
+            </div>
+            <!-- Body -->
+            <div style="padding:1.25rem; display:flex; flex-direction:column; gap:1.25rem;">
+                <p style="font-size:0.875rem; color:#94a3b8; line-height:1.6;">
+                    Sözlükteki <span style="font-weight:700; color:#e2e8f0;" id="bulk-confirm-count">0</span> kelimeyi kalıcı olarak silmek istiyor musunuz?
+                </p>
+                <div style="display:flex; gap:0.5rem; justify-content:flex-end;">
+                    <button onclick="closeBulkConfirm1()"
+                        style="padding:0.5rem 1rem; font-size:0.8125rem; border-radius:0.5rem; background:#334155; color:#cbd5e1; border:1px solid #475569; cursor:pointer; transition:all 0.15s;"
+                        onmouseover="this.style.background='#3f4f63'" onmouseout="this.style.background='#334155'">
+                        Vazgeç
+                    </button>
+                    <button onclick="finalBulkDelete()"
+                        style="padding:0.5rem 1rem; font-size:0.8125rem; font-weight:600; border-radius:0.5rem; background:rgba(248,113,113,0.15); color:#fca5a5; border:1px solid rgba(248,113,113,0.35); cursor:pointer; transition:all 0.15s;"
+                        onmouseover="this.style.background='rgba(248,113,113,0.25)'" onmouseout="this.style.background='rgba(248,113,113,0.15)'">
+                        Evet, Sil
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 </html>
