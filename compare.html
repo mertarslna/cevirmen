@@ -895,6 +895,16 @@
 
         window.addEventListener('DOMContentLoaded', loadState);
 
+        window.addEventListener('storage_sync', async function(e) {
+            if (e.detail.key === 'fileStore') {
+                const newStore = await getStorageItem('fileStore');
+                if (newStore) {
+                    fileStore = newStore;
+                    renderFileList();
+                    checkAndRenderComparison();
+                }
+            }
+        });
     </script>
 </body>
 

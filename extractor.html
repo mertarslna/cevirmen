@@ -1,0 +1,973 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRT Kontrol ve Birlestirici</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="storage.js"></script>
+    <style>
+        .file-item-ext {
+            position: relative;
+            transition: all 0.15s ease
+        }
+
+        .file-select-checkbox {
+            width: 14px;
+            height: 14px;
+            accent-color: #6366f1;
+            cursor: pointer;
+            flex-shrink: 0
+        }
+
+        .file-item-ext.selected-for-merge {
+            background: rgba(99, 102, 241, 0.12) !important;
+            border-color: rgba(99, 102, 241, 0.45) !important
+        }
+
+        .ext-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid #334155;
+            border-radius: 0.875rem;
+            padding: 1.25rem;
+            transition: border-color 0.2s
+        }
+
+        .ext-card:focus-within {
+            border-color: rgba(99, 102, 241, 0.4)
+        }
+
+        .ext-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.875rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #1e293b
+        }
+
+        .ext-card-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #94a3b8
+        }
+
+        .ext-badge {
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 0.2rem 0.5rem;
+            border-radius: 9999px
+        }
+
+        .output-textarea {
+            width: 100%;
+            min-height: 220px;
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 0.5rem;
+            padding: 0.875rem;
+            font-size: 0.8rem;
+            font-family: ui-monospace, monospace;
+            color: #cbd5e1;
+            resize: none;
+            outline: none;
+            line-height: 1.6;
+            transition: border-color 0.2s;
+            overflow-y: auto !important;
+        }
+
+        .output-textarea:focus {
+            border-color: #6366f1
+        }
+
+        .ai-textarea {
+            width: 100%;
+            min-height: 180px;
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 0.5rem;
+            padding: 0.875rem;
+            font-size: 0.875rem;
+            color: #e2e8f0;
+            resize: none;
+            outline: none;
+            line-height: 1.65;
+            transition: border-color 0.2s;
+            overflow-y: auto !important;
+        }
+
+        .ai-textarea:focus {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.2)
+        }
+
+        .history-item {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid #1e293b;
+            border-radius: 0.75rem;
+            padding: 1rem 1.125rem;
+            transition: border-color 0.2s;
+            animation: fadeInUp 0.3s ease
+        }
+
+        .history-item:hover {
+            border-color: #334155
+        }
+
+        .history-item.approved {
+            border-left: 3px solid #10b981
+        }
+
+        .already-approved-banner {
+            background: rgba(180, 83, 9, 0.15);
+            border: 1px solid rgba(217, 119, 6, 0.4);
+            border-radius: 0.625rem;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.625rem;
+            animation: fadeInUp 0.25s ease
+        }
+
+        .format-pill {
+            padding: 0.3rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 1px solid transparent
+        }
+
+        .format-pill.active {
+            background: #4f46e5;
+            color: #fff;
+            border-color: #4f46e5
+        }
+
+        .format-pill:not(.active) {
+            background: transparent;
+            color: #64748b;
+            border-color: #334155
+        }
+
+        .format-pill:not(.active):hover {
+            color: #94a3b8;
+            border-color: #475569
+        }
+
+        .order-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #6366f1;
+            color: white;
+            font-size: 0.6rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4)
+        }
+
+        #merge-footer {
+            position: sticky;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #334155;
+            padding: 0.625rem 0.75rem;
+            z-index: 20
+        }
+
+        .ext-scroll::-webkit-scrollbar {
+            width: 5px
+        }
+
+        .ext-scroll::-webkit-scrollbar-track {
+            background: transparent
+        }
+
+        .ext-scroll::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 99px
+        }
+
+        .ext-scroll::-webkit-scrollbar-thumb:hover {
+            background: #475569
+        }
+
+        .dot-pulse {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: dotPulse 1.4s ease-in-out infinite
+        }
+
+        @keyframes dotPulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1)
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8)
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(6px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .section-tab {
+            padding: 0.5rem 1.125rem;
+            font-size: 0.775rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: none;
+            outline: none
+        }
+
+        .section-tab.active {
+            background: #4f46e5;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35)
+        }
+
+        .section-tab:not(.active) {
+            background: transparent;
+            color: #64748b
+        }
+
+        .section-tab:not(.active):hover {
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.04)
+        }
+
+        .copy-flash {
+            animation: copyFlash 0.4s ease
+        }
+
+        @keyframes copyFlash {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5)
+            }
+
+            100% {
+                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0)
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #475569
+        }
+
+        .empty-state svg {
+            margin: 0 auto 1rem;
+            display: block;
+            opacity: 0.35
+        }
+
+        .empty-state p {
+            font-size: 0.875rem
+        }
+
+        .nav-active {
+            background: rgba(99, 102, 241, 0.18) !important;
+            border-color: rgba(99, 102, 241, 0.4) !important;
+            color: #a5b4fc !important
+        }
+
+        .file-item {
+            transition: background 0.12s, border-color 0.12s
+        }
+
+        .file-item.active {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.35)
+        }
+
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-slate-100 h-screen overflow-hidden flex flex-col font-sans">
+    <header
+        class="sticky top-0 z-50 bg-slate-800/90 backdrop-blur-md border-b border-slate-700 py-3 px-5 shadow-lg flex flex-wrap justify-between items-center gap-3">
+        <div class="flex items-center gap-3">
+            <button id="sidebar-toggle" onclick="toggleSidebar()"
+                class="p-2 rounded-lg hover:bg-slate-700 transition text-slate-400 hover:text-slate-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            <a href="index.html"
+                class="p-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 transition text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-medium border border-slate-600/50 ml-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Editöre Dön
+            </a>
+        </div>
+    </header>
+    <div class="flex flex-1 overflow-hidden">
+        <aside id="file-sidebar" style="width:22rem;"
+            class="shrink-0 bg-slate-800/60 border-r border-slate-700 flex flex-col overflow-hidden">
+            <div class="p-3 border-b border-slate-700 flex flex-col gap-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Dosyalar</p>
+                <div class="flex gap-2">
+                    <input type="file" id="srt-files-input" accept=".srt" multiple class="hidden"
+                        onchange="handleFilesFromInput(event)">
+                    <input type="file" id="srt-folder-input" webkitdirectory class="hidden"
+                        onchange="handleFilesFromInput(event)">
+                    <button onclick="document.getElementById('srt-files-input').click()"
+                        class="flex-1 bg-slate-700 hover:bg-indigo-600 text-slate-200 hover:text-white text-xs px-2 py-1.5 rounded transition flex items-center justify-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>Dosya Ekle
+                    </button>
+                    <button onclick="document.getElementById('srt-folder-input').click()"
+                        class="flex-1 bg-slate-700 hover:bg-indigo-600 text-slate-200 hover:text-white text-xs px-2 py-1.5 rounded transition flex items-center justify-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                        </svg>Klasör Ekle
+                    </button>
+                </div>
+            </div>
+            <div id="file-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+                <p id="no-files-msg" class="text-xs text-slate-500 text-center mt-6 px-2">Henüz dosya
+                    yüklenmedi.<br>Yukarıdaki butonları kullanın.</p>
+            </div>
+            <div class="p-2 border-t border-slate-700 flex justify-between items-center text-xs px-3">
+                <p id="file-count" class="text-slate-500"></p>
+                <div class="flex gap-3">
+                    <button onclick="selectAllFiles()" id="select-all-btn"
+                        class="text-indigo-400 hover:text-indigo-300 transition font-medium">Tümünü
+                        Seç</button>
+                    <button onclick="clearAllFiles()"
+                        class="text-slate-500 hover:text-red-400 transition underline underline-offset-2">Temizle</button>
+                </div>
+            </div>
+        </aside>
+        <div id="sidebar-resizer"
+            class="w-1.5 cursor-col-resize hover:bg-indigo-500/50 transition-colors z-10 shrink-0 border-r border-slate-700/50 bg-slate-800">
+        </div>
+        <script>
+            (function () { var sw = localStorage.getItem('sidebarWidth') || '22rem'; var open = localStorage.getItem('sidebarOpen') !== 'false'; var sb = document.getElementById('file-sidebar'); var r = document.getElementById('sidebar-resizer'); if (sb && r) { if (!open) { sb.style.width = '0'; sb.style.opacity = '0'; r.style.display = 'none'; } else { sb.style.width = sw; } } })();
+        </script>
+        <main class="flex-1 overflow-y-auto p-5 flex flex-col gap-5 ext-scroll" id="main-area">
+            <section id="tab-merge" class="flex-1 flex flex-col gap-4">
+                <div id="already-approved-banner" class="hidden already-approved-banner">
+                    <svg class="w-5 h-5 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                        <p class="text-sm font-semibold text-amber-300">Bu kombinasyon daha once onaylanmıştı!</p>
+                        <p id="already-approved-detail" class="text-xs text-amber-200/80 mt-0.5"></p>
+                    </div>
+                </div>
+                <div class="ext-card flex-1 flex flex-col">
+                    <div class="ext-card-header">
+                        <svg class="w-4 h-4 text-indigo-400 shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h10m-10 6h16" />
+                        </svg>
+                        <span class="ext-card-title">Birleştir &amp; Çıktı</span>
+                        <div class="ml-auto flex items-center gap-3">
+                        </div>
+                    </div>
+                    <div id="merge-order-list" class="hidden mb-3">
+                        <p class="text-xs text-slate-500 mb-1.5 font-medium">Birlestirme sirasi:</p>
+                        <div id="merge-order-items" class="flex flex-wrap gap-1.5"></div>
+                    </div>
+                    <div id="output-empty" class="empty-state">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p>Sol panelden dosya secin, ardindan <strong class="text-indigo-400">Birlestir</strong>
+                            butonuna basin.</p>
+                    </div>
+                    <textarea id="output-textarea" class="output-textarea hidden"
+                        placeholder="Birleştirilmiş içerik burada görünecek..." spellcheck="false"></textarea>
+                    <div id="output-actions"
+                        class="hidden flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-700/50">
+                        <span id="output-stats" class="text-xs text-slate-500"></span>
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="flex items-center border border-slate-700 rounded-lg overflow-hidden bg-slate-900">
+                                <input type="text" id="export-filename" value="birleştirilmiş"
+                                    class="bg-transparent px-2.5 py-1.5 text-sm text-slate-200 focus:outline-none w-32">
+                                <span class="text-slate-500 text-xs pr-2 select-none" id="export-ext">.txt</span>
+                            </div>
+                            <button onclick="downloadOutput()"
+                                class="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium px-3 py-1.5 rounded-lg transition border border-slate-600">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>İndir
+                            </button>
+                            <button onclick="copyOutput()" id="copy-btn"
+                                class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow-md">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>Panoya Kopyala
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section id="tab-ai" class="hidden flex flex-col gap-4">
+                <div class="ext-card">
+                    <div class="ext-card-header">
+                        <svg class="w-4 h-4 text-violet-400 shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <span class="ext-card-title">AI Kontrol Paneli</span>
+                        <span class="ext-badge ml-auto"
+                            style="background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3)">Yapay
+                            Zeka Yaniti</span>
+                    </div>
+                    <div id="ai-current-merge-info"
+                        class="hidden mb-3 p-3 bg-slate-900/60 border border-slate-700 rounded-lg text-xs text-slate-400">
+                        <p class="font-semibold text-slate-300 mb-1.5">Son Birlestirme:</p>
+                        <div id="ai-merge-files" class="flex flex-wrap gap-1"></div>
+                    </div>
+                    <div id="ai-no-merge-warning"
+                        class="mb-3 p-3 bg-amber-950/30 border border-amber-800/50 rounded-lg text-xs text-amber-300 flex items-center gap-2">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Henüz birleştirme yapılmadı. Önce "Birlestir ve Cikti" sekmesinden dosyaları birleştirin.
+                    </div>
+                    <label class="text-xs text-slate-400 font-medium mb-1.5 block">AI yanıtını buraya
+                        yapıştırın:</label>
+                    <textarea id="ai-response-textarea" class="ai-textarea"
+                        placeholder="AI'dan gelen kontrol yanıtını buraya yapıştırın..."></textarea>
+                    <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-700/50">
+                        <span id="ai-char-count" class="text-xs text-slate-600">0 karakter</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="clearAIResponse()"
+                                class="text-xs text-slate-500 hover:text-slate-300 transition px-2 py-1.5">Temizle</button>
+                            <button onclick="approveReview()" id="approve-btn"
+                                class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition shadow-lg">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 13l4 4L19 7" />
+                                </svg>Kontrol Sonucunu Onayla ve Kaydet
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="approve-success" class="hidden ext-card"
+                    style="border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.05)">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-emerald-300">Onaylandı ve kaydedildi!</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Bu kombinasyon geçmişe eklendi. Tekrar aynı
+                                dosyaları birleştirirseniz uyarı alacaksınız.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section id="tab-history" class="hidden flex flex-col gap-4">
+                <div class="ext-card">
+                    <div class="ext-card-header">
+                        <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="ext-card-title">Onaylanan Çeviriler</span>
+                        <span id="history-total" class="ext-badge ml-2"
+                            style="background:rgba(99,102,241,0.15);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3)">0
+                            kayit</span>
+                        <button onclick="clearAllHistory()"
+                            class="ml-auto text-xs text-red-400/70 hover:text-red-400 transition">Tümünü Sil</button>
+                    </div>
+                    <div id="history-empty" class="empty-state">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p>Henüz onaylanmış çeviri yok.<br>AI Kontrol sekmesinden onayla.</p>
+                    </div>
+                    <div id="history-list" class="space-y-3"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script>
+        var fileStore = {}; var collapsedFolders = new Set(); var sidebarOpen = localStorage.getItem('sidebarOpen') !== 'false';
+        var selectedFiles = new Set(); var mergeOrder = []; var outputFormat = 'srt';
+        var currentMergeKey = null; var currentMergeFiles = []; var approvedHistory = []; var activeTab = 'merge';
+
+        window.addEventListener('DOMContentLoaded', async function () {
+            await loadState(); renderFileList(); updateHistoryBadge();
+            var aiTA = document.getElementById('ai-response-textarea');
+            aiTA.addEventListener('input', function () { document.getElementById('ai-char-count').textContent = aiTA.value.length + ' karakter'; });
+        });
+
+        async function loadState() {
+            var ss = await getStorageItem('fileStore');
+            if (ss && Object.keys(ss).length > 0) fileStore = ss;
+            var sc = await getStorageItem('collapsedFolders');
+            if (sc && Array.isArray(sc)) collapsedFolders = new Set(sc);
+            var es = await getStorageItem('extractorState');
+            if (es) {
+                if (es.selectedFiles) selectedFiles = new Set(es.selectedFiles.filter(function (k) { return fileStore[k]; }));
+                if (es.mergeOrder) mergeOrder = es.mergeOrder.filter(function (k) { return fileStore[k]; });
+                if (es.outputFormat) outputFormat = es.outputFormat;
+                if (es.currentMergeKey) currentMergeKey = es.currentMergeKey;
+                if (es.currentMergeFiles) currentMergeFiles = es.currentMergeFiles;
+                if (mergeOrder.length > 0) {
+                    mergeSelected();
+                } else if (es.lastOutput && es.lastOutput.trim()) {
+                    var ta = document.getElementById('output-textarea'); ta.value = es.lastOutput; ta.classList.remove('hidden');
+                    document.getElementById('output-empty').classList.add('hidden');
+                    document.getElementById('output-actions').classList.remove('hidden');
+                    document.getElementById('output-actions').classList.add('flex');
+                    updateOutputStats(); updateMergeOrderDisplay();
+                }
+            }
+            setFormat(outputFormat, false);
+            var h = await getStorageItem('extractorHistory');
+            if (h && Array.isArray(h)) approvedHistory = h;
+            renderHistory(); updateAIPanel();
+        }
+
+        async function saveState() {
+            await setStorageItem('collapsedFolders', Array.from(collapsedFolders));
+            var ta = document.getElementById('output-textarea');
+            await setStorageItem('extractorState', { selectedFiles: Array.from(selectedFiles), mergeOrder: mergeOrder, outputFormat: outputFormat, currentMergeKey: currentMergeKey, currentMergeFiles: currentMergeFiles, lastOutput: ta ? ta.value : '' });
+            await setStorageItem('extractorHistory', approvedHistory);
+        }
+
+        var currentSidebarWidth = localStorage.getItem('sidebarWidth') || '22rem';
+        function toggleSidebar() {
+            var sb = document.getElementById('file-sidebar'); var r = document.getElementById('sidebar-resizer');
+            sb.style.transition = 'width 0.3s ease, opacity 0.3s ease'; sidebarOpen = !sidebarOpen; localStorage.setItem('sidebarOpen', sidebarOpen);
+            if (sidebarOpen) { sb.style.width = currentSidebarWidth; sb.style.opacity = '1'; r.style.display = 'block'; }
+            else { currentSidebarWidth = sb.style.width || '22rem'; sb.style.width = '0'; sb.style.opacity = '0'; r.style.display = 'none'; }
+            setTimeout(function () { sb.style.transition = ''; }, 300);
+        }
+        var resizer = document.getElementById('sidebar-resizer'); var sidebar = document.getElementById('file-sidebar'); var isResizing = false;
+        resizer.addEventListener('mousedown', function () { isResizing = true; document.body.style.cursor = 'col-resize'; document.body.classList.add('select-none'); });
+        document.addEventListener('mousemove', function (e) { if (!isResizing) return; var r = sidebar.getBoundingClientRect(); var w = e.clientX - r.left; if (w < 150) w = 150; if (w > 600) w = 600; sidebar.style.width = w + 'px'; currentSidebarWidth = w + 'px'; });
+        document.addEventListener('mouseup', function () { if (isResizing) { isResizing = false; document.body.style.cursor = ''; document.body.classList.remove('select-none'); localStorage.setItem('sidebarWidth', currentSidebarWidth); } });
+
+        function handleFilesFromInput(ev) {
+            var rf = [...ev.target.files].filter(function (f) { return f.name.endsWith('.srt'); });
+            if (!rf.length) return;
+            loadFilesWithPaths(rf.map(function (f) { return { file: f, path: f.webkitRelativePath || f.name }; }));
+            ev.target.value = '';
+        }
+        function loadFilesWithPaths(fos) {
+            var loaded = 0;
+            fos.forEach(function (obj) {
+                var reader = new FileReader();
+                reader.onload = async function (e) {
+                    if (!fileStore[obj.path]) fileStore[obj.path] = { path: obj.path, name: obj.file.name, subtitles: parseSRT(e.target.result) };
+                    loaded++;
+                    if (loaded === fos.length) { await setStorageItem('fileStore', fileStore); renderFileList(); }
+                };
+                reader.readAsText(obj.file, 'UTF-8');
+            });
+        }
+        function parseSRT(data) {
+            var c = data.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            var blocks = c.trim().split(/\n\s*\n/); var subs = [];
+            blocks.forEach(function (b) { var l = b.split('\n'); if (l.length >= 3) subs.push({ index: subs.length + 1, time: l[1].trim(), text: l.slice(2).join('\n'), suggestion: '' }); });
+            return subs;
+        }
+
+        function buildFileTree() {
+            var root = { name: '', fullPath: '', type: 'folder', children: {} };
+            Object.keys(fileStore).forEach(function (key) {
+                var parts = key.split('/'); var cur = root;
+                for (var i = 0; i < parts.length; i++) {
+                    var p = parts[i]; var isF = (i === parts.length - 1); var cp = cur.fullPath ? cur.fullPath + '/' + p : p;
+                    if (isF) { cur.children[p] = { name: p, fullPath: key, type: 'file', key: key, subtitlesCount: fileStore[key].subtitles ? fileStore[key].subtitles.length : 0 }; }
+                    else { if (!cur.children[p]) cur.children[p] = { name: p, fullPath: cp, type: 'folder', children: {} }; cur = cur.children[p]; }
+                }
+            });
+            return root;
+        }
+        function sortTree(node) {
+            if (node.type !== 'folder' || !node.children) return [];
+            var list = Object.keys(node.children).map(function (k) { var c = node.children[k]; if (c.type === 'folder') c.sortedChildren = sortTree(c); return c; });
+            list.sort(function (a, b) { if (a.type !== b.type) return a.type === 'folder' ? -1 : 1; return a.name.localeCompare(b.name, 'tr', { numeric: true, sensitivity: 'base' }); });
+            return list;
+        }
+        function renderFileList() {
+            var list = document.getElementById('file-list'); var ce = document.getElementById('file-count'); list.innerHTML = '';
+            var keys = Object.keys(fileStore);
+            if (keys.length === 0) { list.innerHTML = '<p class="text-xs text-slate-500 text-center mt-6 px-2">Henuz dosya yuklenmedi.<br>Yukaridaki butonlari kullanin.</p>'; ce.textContent = ''; return; }
+            ce.textContent = keys.length + ' dosya yuklu';
+            var rt = buildFileTree(); var sn = sortTree(rt);
+            var con = document.createElement('div'); con.className = 'flex gap-2 items-start';
+            var c1 = document.createElement('div'); c1.className = 'flex-1 flex flex-col space-y-1 min-w-0';
+            var c2 = document.createElement('div'); c2.className = 'flex-1 flex flex-col space-y-1 min-w-0';
+            con.appendChild(c1); con.appendChild(c2);
+            sn.forEach(function (node, idx) { var w = document.createElement('div'); w.className = 'flex flex-col space-y-1'; renderNode(node, w, 0); (idx % 2 === 0 ? c1 : c2).appendChild(w); });
+            list.appendChild(con);
+            var allK = Object.keys(fileStore); var allS = allK.length > 0 && allK.every(function (k) { return selectedFiles.has(k); });
+            document.getElementById('select-all-btn').textContent = allS ? 'Secimi Kaldir' : 'Tumunu Sec';
+        }
+        function renderNode(node, par, depth) {
+            var ip = depth > 0 ? (depth * 10 + 4) : 4;
+            if (node.type === 'folder') {
+                var ic = collapsedFolders.has(node.fullPath);
+                var fi = document.createElement('div'); fi.className = 'file-item border border-slate-700/40 hover:border-slate-600 rounded-lg px-2 py-1.5 cursor-pointer flex items-center gap-1.5 text-slate-300 hover:text-slate-100 select-none bg-slate-800/40'; fi.style.paddingLeft = ip + 'px';
+                var csvg = ic ? '<svg class="w-3.5 h-3.5 text-slate-500 shrink-0 transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>' : '<svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>';
+                var fsvg = ic ? '<svg class="w-4 h-4 text-amber-500/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /></svg>' : '<svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" /></svg>';
+                fi.innerHTML = csvg + fsvg + '<span class="text-xs font-semibold truncate flex-1" title="' + node.name + '">' + node.name + '</span><button class="del-btn text-slate-600 hover:text-red-400 shrink-0 p-0.5"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>';
+                fi.addEventListener('click', function () { if (collapsedFolders.has(node.fullPath)) collapsedFolders.delete(node.fullPath); else collapsedFolders.add(node.fullPath); renderFileList(); saveState(); });
+                fi.querySelector('.del-btn').addEventListener('click', function (e) { e.stopPropagation(); removeFolder(node.fullPath); });
+                par.appendChild(fi);
+                if (!ic && node.sortedChildren) { var cc = document.createElement('div'); cc.className = 'space-y-1 mt-0.5'; node.sortedChildren.forEach(function (c) { renderNode(c, cc, depth + 1); }); par.appendChild(cc); }
+            } else {
+                var isSel = selectedFiles.has(node.key); var oi = mergeOrder.indexOf(node.key);
+                var fi2 = document.createElement('div'); fi2.className = 'file-item file-item-ext border border-slate-700/60 rounded-lg px-2 py-1.5 cursor-pointer flex items-center gap-1.5 group' + (isSel ? ' selected-for-merge' : '');
+                fi2.style.paddingLeft = ip + 'px'; fi2.style.position = 'relative';
+                var ic2 = isSel ? 'text-indigo-400' : 'text-slate-500'; var nc = isSel ? 'text-indigo-300 font-semibold' : 'text-slate-300';
+                var cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'file-select-checkbox'; cb.checked = isSel;
+                cb.addEventListener('change', function (e) { e.stopPropagation(); toggleFileSelection(node.key); });
+                fi2.appendChild(cb);
+                fi2.insertAdjacentHTML('beforeend', '<svg class="w-4 h-4 shrink-0 ' + ic2 + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><span class="text-xs truncate flex-1 ' + nc + '" title="' + node.fullPath + '">' + node.name + '</span><span class="text-xs text-slate-500 shrink-0">' + node.subtitlesCount + '</span><button class="del-btn text-slate-600 hover:text-red-400 shrink-0 p-0.5 ml-0.5" data-key="' + node.key + '"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>');
+                if (isSel && oi >= 0) { var badge = document.createElement('div'); badge.className = 'order-badge'; badge.textContent = oi + 1; fi2.appendChild(badge); }
+                fi2.querySelector('.del-btn').addEventListener('click', function (e) { e.stopPropagation(); removeFile(node.key); });
+                fi2.addEventListener('click', function (e) { if (e.target.closest('.del-btn') || e.target === cb) return; toggleFileSelection(node.key); });
+                par.appendChild(fi2);
+            }
+        }
+        function toggleFileSelection(key) {
+            if (selectedFiles.has(key)) { selectedFiles.delete(key); mergeOrder = mergeOrder.filter(function (k) { return k !== key; }); }
+            else { selectedFiles.add(key); mergeOrder.push(key); }
+            renderFileList();
+            if (selectedFiles.size > 0) { mergeSelected(); } else { clearMergedOutput(); }
+            saveState();
+        }
+        function selectAllFiles() {
+            var ak = Object.keys(fileStore); var as = ak.length > 0 && ak.every(function (k) { return selectedFiles.has(k); });
+            if (as) { selectedFiles.clear(); mergeOrder = []; }
+            else { ak.forEach(function (k) { if (!selectedFiles.has(k)) { selectedFiles.add(k); mergeOrder.push(k); } }); }
+            renderFileList();
+            if (selectedFiles.size > 0) { mergeSelected(); } else { clearMergedOutput(); }
+            saveState();
+        }
+        function clearMergedOutput() {
+            var ta = document.getElementById('output-textarea'); if (ta) { ta.value = ''; ta.classList.add('hidden'); }
+            var oe = document.getElementById('output-empty'); if (oe) oe.classList.remove('hidden');
+            var oa = document.getElementById('output-actions'); if (oa) { oa.classList.add('hidden'); oa.classList.remove('flex'); }
+            var mol = document.getElementById('merge-order-list'); if (mol) mol.classList.add('hidden');
+            var aab = document.getElementById('already-approved-banner'); if (aab) aab.classList.add('hidden');
+        }
+
+        function mergeSelected() {
+            if (selectedFiles.size === 0) return;
+            var ok = mergeOrder.filter(function (k) { return fileStore[k] && selectedFiles.has(k); }); if (ok.length === 0) return;
+            var sk = [...ok].sort();
+            try { currentMergeKey = btoa(unescape(encodeURIComponent(sk.join('|')))).replace(/=/g, '').substring(0, 16); }
+            catch (e) { currentMergeKey = btoa(sk.join('|').replace(/[^\x00-\x7F]/g, '?')).replace(/=/g, '').substring(0, 16); }
+            currentMergeFiles = ok.map(function (k) { return fileStore[k].name; });
+            var ex = approvedHistory.find(function (h) { return h.key === currentMergeKey; });
+            var bn = document.getElementById('already-approved-banner');
+            if (ex) { var ds = new Date(ex.date).toLocaleString('tr-TR'); document.getElementById('already-approved-detail').textContent = 'Onay tarihi: ' + ds + ' - ' + ex.files.join(', '); bn.classList.remove('hidden'); }
+            else { bn.classList.add('hidden'); }
+            var parts = ok.map(function (k) {
+                var filename = fileStore[k].name;
+                var gi = 1;
+                var srtText = (fileStore[k].subtitles || []).map(function (s) {
+                    return (gi++) + '\n' + s.time + '\n' + s.text;
+                }).join('\n\n');
+                return filename + " Satırları\n\n" + srtText;
+            });
+            var out = parts.join('\n\n\n');
+            var ta = document.getElementById('output-textarea'); ta.value = out; ta.classList.remove('hidden');
+            document.getElementById('output-empty').classList.add('hidden');
+            document.getElementById('output-actions').classList.remove('hidden'); document.getElementById('output-actions').classList.add('flex');
+            updateOutputStats(); updateMergeOrderDisplay(); updateAIPanel(); switchTab('merge'); saveState();
+        }
+
+        function handleOutputEdit() {
+            updateOutputStats();
+            saveState();
+        }
+        function updateOutputStats() {
+            var ta = document.getElementById('output-textarea'); var text = ta.value;
+            var chars = text.length; var words = text.trim() ? text.trim().split(/\s+/).length : 0; var lines = text.split('\n').length;
+            document.getElementById('output-stats').textContent = chars.toLocaleString('tr-TR') + ' karakter - ' + words.toLocaleString('tr-TR') + ' kelime - ' + lines.toLocaleString('tr-TR') + ' satir';
+        }
+        function updateMergeOrderDisplay() {
+            var con = document.getElementById('merge-order-list'); var items = document.getElementById('merge-order-items');
+            var ok = mergeOrder.filter(function (k) { return fileStore[k] && selectedFiles.has(k); });
+            if (ok.length === 0) { con.classList.add('hidden'); return; }
+            con.classList.remove('hidden'); items.innerHTML = '';
+            ok.forEach(function (k, i) {
+                var s = document.createElement('span'); s.className = 'flex items-center gap-1 text-xs bg-slate-900 border border-slate-700 rounded-full px-2.5 py-1 text-slate-300';
+                s.innerHTML = '<span class="w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center shrink-0">' + (i + 1) + '</span><span class="truncate max-w-[120px]" title="' + k + '">' + fileStore[k].name + '</span>';
+                items.appendChild(s);
+            });
+        }
+        function setFormat(fmt, remerge) {
+            outputFormat = fmt; if (remerge === undefined) remerge = true;
+            var elText = document.getElementById('fmt-text');
+            var elSrt = document.getElementById('fmt-srt');
+            if (elText) elText.classList.toggle('active', fmt === 'text');
+            if (elSrt) elSrt.classList.toggle('active', fmt === 'srt');
+            var elExp = document.getElementById('export-ext');
+            if (elExp) elExp.textContent = fmt === 'srt' ? '.srt' : '.txt';
+            if (remerge && selectedFiles.size > 0) { var ta = document.getElementById('output-textarea'); if (ta && ta.value) mergeSelected(); }
+            saveState();
+        }
+        function copyOutput() {
+            var ta = document.getElementById('output-textarea'); if (!ta.value) return;
+            navigator.clipboard.writeText(ta.value).then(function () {
+                var btn = document.getElementById('copy-btn'); var orig = btn.innerHTML;
+                btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Kopyalandi!';
+                btn.classList.add('bg-emerald-600', 'copy-flash'); btn.classList.remove('bg-indigo-600');
+                setTimeout(function () { btn.innerHTML = orig; btn.classList.remove('bg-emerald-600', 'copy-flash'); btn.classList.add('bg-indigo-600'); }, 2000);
+            });
+        }
+        function downloadOutput() {
+            var ta = document.getElementById('output-textarea'); if (!ta.value) return;
+            var name = document.getElementById('export-filename').value.trim() || 'birlestirilmis';
+            var ext = outputFormat === 'srt' ? '.srt' : '.txt'; var fn = name.endsWith(ext) ? name : name + ext;
+            var blob = new Blob([ta.value], { type: 'text/plain;charset=utf-8;' }); var url = URL.createObjectURL(blob);
+            var a = document.createElement('a'); a.href = url; a.download = fn; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        }
+        function updateAIPanel() {
+            var has = currentMergeFiles.length > 0;
+            document.getElementById('ai-current-merge-info').classList.toggle('hidden', !has);
+            document.getElementById('ai-no-merge-warning').classList.toggle('hidden', has);
+            var fc = document.getElementById('ai-merge-files'); fc.innerHTML = '';
+            currentMergeFiles.forEach(function (name, i) {
+                var s = document.createElement('span'); s.className = 'flex items-center gap-1 text-xs bg-slate-800 border border-slate-700 rounded-full px-2 py-0.5 text-slate-400';
+                s.innerHTML = '<span class="text-[9px] w-4 h-4 rounded-full bg-indigo-600/50 text-indigo-300 font-bold flex items-center justify-center">' + (i + 1) + '</span><span class="max-w-[120px] truncate" title="' + escHtml(name) + '">' + escHtml(name) + '</span>';
+                fc.appendChild(s);
+            });
+        }
+        function clearAIResponse() {
+            document.getElementById('ai-response-textarea').value = '';
+            document.getElementById('ai-char-count').textContent = '0 karakter';
+            document.getElementById('approve-success').classList.add('hidden');
+        }
+        function approveReview() {
+            var aiText = document.getElementById('ai-response-textarea').value.trim();
+            if (!aiText) { var t = document.getElementById('ai-response-textarea'); t.focus(); t.style.borderColor = '#ef4444'; setTimeout(function () { t.style.borderColor = ''; }, 1500); return; }
+            if (!currentMergeKey) { alert('Once birlestirme yapmaniz gerekiyor.'); switchTab('merge'); return; }
+            var entry = { id: Date.now(), key: currentMergeKey, files: [...currentMergeFiles], date: new Date().toISOString(), aiResponse: aiText, preview: aiText.substring(0, 150) };
+            var idx = approvedHistory.findIndex(function (h) { return h.key === currentMergeKey; });
+            if (idx >= 0) approvedHistory[idx] = entry; else approvedHistory.unshift(entry);
+            renderHistory(); updateHistoryBadge();
+            document.getElementById('approve-success').classList.remove('hidden');
+            setTimeout(function () { document.getElementById('approve-success').classList.add('hidden'); }, 5000);
+            var ds = new Date(entry.date).toLocaleString('tr-TR');
+            document.getElementById('already-approved-detail').textContent = 'Onay tarihi: ' + ds + ' - ' + entry.files.join(', ');
+            document.getElementById('already-approved-banner').classList.remove('hidden');
+            saveState();
+        }
+        function renderHistory() {
+            var list = document.getElementById('history-list'); var emptyEl = document.getElementById('history-empty'); var totalEl = document.getElementById('history-total');
+            list.innerHTML = ''; totalEl.textContent = approvedHistory.length + ' kayit';
+            if (approvedHistory.length === 0) { emptyEl.classList.remove('hidden'); return; }
+            emptyEl.classList.add('hidden');
+            approvedHistory.forEach(function (entry, idx) {
+                var item = document.createElement('div'); item.className = 'history-item approved';
+                var ds = new Date(entry.date).toLocaleString('tr-TR');
+                item.innerHTML = '<div class="flex items-start justify-between gap-2 mb-2"><div class="flex items-center gap-2"><div class="dot-pulse"></div><span class="text-xs font-semibold text-emerald-300">Onaylandi</span><span class="text-xs text-slate-500">' + ds + '</span></div><div class="flex items-center gap-1"><button onclick="reloadHistoryEntry(' + idx + ')" class="text-xs text-indigo-400 hover:text-indigo-300 transition px-2 py-1 rounded hover:bg-indigo-900/30"><svg class="w-3.5 h-3.5 inline mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>Yeniden Ac</button><button onclick="deleteHistoryEntry(' + idx + ')" class="text-xs text-red-400/70 hover:text-red-400 transition p-1 rounded hover:bg-red-900/20"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div></div>' +
+                    '<div class="flex flex-wrap gap-1 mb-2">' + entry.files.map(function (f, i) { return '<span class="text-[10px] bg-slate-800 border border-slate-700 rounded-full px-2 py-0.5 text-slate-400 flex items-center gap-1"><span class="text-[8px] w-3.5 h-3.5 rounded-full bg-indigo-600/40 text-indigo-300 font-bold flex items-center justify-center">' + (i + 1) + '</span>' + escHtml(f) + '</span>'; }).join('') + '</div>' +
+                    '<span class="text-[10px] text-slate-600 font-mono bg-slate-900 px-2 py-0.5 rounded inline-block mb-2">ID: ' + entry.key + '</span>' +
+                    '<div class="bg-slate-900/50 border border-slate-700/50 rounded-lg p-2.5"><span class="text-violet-400 font-semibold text-[10px] uppercase tracking-wider block mb-1">AI Yaniti Onizleme</span><p class="text-xs text-slate-300 leading-relaxed line-clamp-3">' + escHtml(entry.preview) + (entry.aiResponse.length > 150 ? '...' : '') + '</p></div>';
+                list.appendChild(item);
+            });
+        }
+        function updateHistoryBadge() {
+            var b = document.getElementById('history-badge');
+            if (approvedHistory.length > 0) { b.textContent = approvedHistory.length; b.classList.remove('hidden'); } else { b.classList.add('hidden'); }
+        }
+        function reloadHistoryEntry(idx) {
+            var e = approvedHistory[idx]; if (!e) return;
+            document.getElementById('ai-response-textarea').value = e.aiResponse;
+            document.getElementById('ai-char-count').textContent = e.aiResponse.length + ' karakter';
+            currentMergeKey = e.key; currentMergeFiles = [...e.files]; updateAIPanel(); switchTab('ai');
+        }
+        function deleteHistoryEntry(idx) {
+            if (!confirm('Bu onay kaydini silmek istediginize emin misiniz?')) return;
+            approvedHistory.splice(idx, 1); renderHistory(); updateHistoryBadge(); saveState();
+        }
+        function clearAllHistory() {
+            if (approvedHistory.length === 0) return;
+            if (!confirm('Tum onay gecmisi silinecek. Emin misiniz?')) return;
+            approvedHistory = []; renderHistory(); updateHistoryBadge();
+            document.getElementById('already-approved-banner').classList.add('hidden'); saveState();
+        }
+        function removeFile(key) {
+            if (!confirm('"' + key + '" dosyasini kaldirmak istediginize emin misiniz?')) return;
+            delete fileStore[key]; selectedFiles.delete(key); mergeOrder = mergeOrder.filter(function (k) { return k !== key; });
+            setStorageItem('fileStore', fileStore); renderFileList(); saveState();
+        }
+        function removeFolder(fp) {
+            if (!confirm('"' + fp + '" klasorunu kaldirmak istediginize emin misiniz?')) return;
+            var prefix = fp + '/';
+            Object.keys(fileStore).filter(function (k) { return k === fp || k.startsWith(prefix); }).forEach(function (k) { delete fileStore[k]; selectedFiles.delete(k); mergeOrder = mergeOrder.filter(function (m) { return m !== k; }); });
+            setStorageItem('fileStore', fileStore); renderFileList(); saveState();
+        }
+        function clearAllFiles() {
+            if (Object.keys(fileStore).length === 0) return;
+            if (!confirm('Tum dosyalar kaldirilacak. Emin misiniz?')) return;
+            fileStore = {}; selectedFiles.clear(); mergeOrder = []; currentMergeKey = null; currentMergeFiles = [];
+            var ta = document.getElementById('output-textarea'); ta.value = ''; ta.classList.add('hidden');
+            document.getElementById('output-empty').classList.remove('hidden');
+            document.getElementById('output-actions').classList.add('hidden'); document.getElementById('output-actions').classList.remove('flex');
+            document.getElementById('merge-order-list').classList.add('hidden');
+            document.getElementById('already-approved-banner').classList.add('hidden');
+            setStorageItem('fileStore', fileStore); renderFileList(); updateAIPanel(); saveState();
+        }
+        function switchTab(tab) {
+            activeTab = tab;
+            ['merge', 'ai', 'history'].forEach(function (t) {
+                var section = document.getElementById('tab-' + t);
+                if (section) section.classList.toggle('hidden', t !== tab);
+                var btn = document.getElementById('tab-btn-' + t);
+                if (btn) btn.classList.toggle('active', t === tab);
+            });
+            if (tab === 'ai') updateAIPanel();
+        }
+        function escHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+        function saveMergedChanges() {
+            if (outputFormat !== 'srt') {
+                alert("Değişiklikleri kaydetmek için sağ üstten 'Tam SRT' formatını seçmiş olmalısınız. 'Sadece Metin' formatındayken orijinal dosyalara geri kayıt yapılamaz.");
+                return;
+            }
+            var ta = document.getElementById('output-textarea');
+            var text = ta.value;
+            var parsed = parseSRT(text);
+
+            var ok = mergeOrder.filter(function (k) { return fileStore[k] && selectedFiles.has(k); });
+            if (ok.length === 0) return;
+
+            var expectedCount = 0;
+            ok.forEach(function (k) { expectedCount += (fileStore[k].subtitles || []).length; });
+
+            if (parsed.length !== expectedCount) {
+                alert("Hata: Başlangıçtaki blok sayısı (" + expectedCount + ") ile güncel metindeki blok sayısı (" + parsed.length + ") eşleşmiyor. Lütfen blok eklemeyin veya silmeyin, sadece metinleri düzenleyin.");
+                return;
+            }
+
+            var offset = 0;
+            ok.forEach(function (k) {
+                var count = (fileStore[k].subtitles || []).length;
+                var fileBlocks = parsed.slice(offset, offset + count);
+                fileBlocks.forEach(function (b, i) { b.index = i + 1; });
+                fileStore[k].subtitles = fileBlocks;
+                offset += count;
+            });
+
+            setStorageItem('fileStore', fileStore);
+            renderFileList();
+            saveState();
+
+            var btn = document.getElementById('save-changes-btn');
+            var orig = btn.innerHTML;
+            btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Kaydedildi!';
+            btn.classList.add('bg-emerald-600', 'copy-flash'); btn.classList.remove('bg-emerald-600');
+            setTimeout(function () { btn.innerHTML = orig; btn.classList.remove('copy-flash'); }, 2000);
+        }
+
+        function saveMergedChangesSilent() {
+            if (outputFormat !== 'srt') return;
+            var ta = document.getElementById('output-textarea');
+            if (!ta) return;
+            var text = ta.value;
+            var parsed = parseSRT(text);
+            var ok = mergeOrder.filter(function (k) { return fileStore[k] && selectedFiles.has(k); });
+            if (ok.length === 0) return;
+            var expectedCount = 0;
+            ok.forEach(function (k) { expectedCount += (fileStore[k].subtitles || []).length; });
+            if (parsed.length !== expectedCount) return;
+            var offset = 0;
+            ok.forEach(function (k) {
+                var count = (fileStore[k].subtitles || []).length;
+                var fileBlocks = parsed.slice(offset, offset + count);
+                fileBlocks.forEach(function (b, i) { b.index = i + 1; });
+                fileStore[k].subtitles = fileBlocks;
+                offset += count;
+            });
+            setStorageItem('fileStore', fileStore);
+            saveState();
+        }
+
+        var autoSaveTimeout;
+        var outTa = document.getElementById('output-textarea');
+        if (outTa) {
+            outTa.addEventListener('input', function () {
+                clearTimeout(autoSaveTimeout);
+                autoSaveTimeout = setTimeout(saveMergedChangesSilent, 800);
+            });
+            outTa.addEventListener('blur', saveMergedChangesSilent);
+        }
+
+        window.addEventListener('storage_sync', async function (e) {
+            if (e.detail.key === 'fileStore') {
+                const newStore = await getStorageItem('fileStore');
+                if (newStore) {
+                    fileStore = newStore;
+                    renderFileList();
+                    if (mergeOrder.length > 0 && document.activeElement !== document.getElementById('output-textarea')) {
+                        mergeSelected();
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

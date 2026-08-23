@@ -133,6 +133,15 @@
                 </svg>
                 Karşılaştırma Yap
             </a>
+            <a href="extractor.html"
+                class="p-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 transition text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-medium border border-slate-600/50 ml-2"
+                title="Kontrol Et">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Kontrol Et
+            </a>
             <button onclick="openDictionaryModal()"
                 class="p-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 transition text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-medium border border-slate-600/50 ml-2"
                 title="Özel İsimler Sözlüğü">
@@ -1530,7 +1539,21 @@
 
         // Initial load
         loadDictionary();
+
+        window.addEventListener('storage_sync', async function(e) {
+            if (e.detail.key === 'fileStore') {
+                const newStore = await getStorageItem('fileStore');
+                if (newStore) {
+                    fileStore = newStore;
+                    renderFileList();
+                    if (currentFileKey && fileStore[currentFileKey]) {
+                        renderEditor(currentFileKey);
+                    }
+                }
+            }
+        });
     </script>
+
 
     <!-- Dictionary Modal -->
     <div id="dictionary-modal"
@@ -1547,8 +1570,7 @@
                 </h3>
                 <div class="flex items-center gap-2">
                     <!-- Bulk delete button -->
-                    <button id="dict-bulk-delete-btn" onclick="bulkDeleteAll()" title="Tümünü Sil"
-                        style="display:none"
+                    <button id="dict-bulk-delete-btn" onclick="bulkDeleteAll()" title="Tümünü Sil" style="display:none"
                         class="flex items-center gap-1.5 text-xs font-medium text-red-400 hover:text-red-300 border border-red-500/40 hover:border-red-400/70 bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1.5 rounded-lg transition-all">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1588,8 +1610,10 @@
         <div id="bulk-confirm-1-content"
             style="background:#1e293b; border:1px solid #334155; border-radius:0.75rem; box-shadow:0 25px 50px rgba(0,0,0,0.6); width:380px; max-width:90vw; overflow:hidden; transform:scale(0.95); opacity:0; transition:all 0.2s ease;">
             <!-- Header -->
-            <div style="padding:1rem 1.25rem; border-bottom:1px solid #334155; display:flex; align-items:center; gap:0.75rem; background:rgba(248,113,113,0.06);">
-                <svg style="width:1.125rem;height:1.125rem;color:#f87171;flex-shrink:0" fill="none" stroke="#f87171" viewBox="0 0 24 24">
+            <div
+                style="padding:1rem 1.25rem; border-bottom:1px solid #334155; display:flex; align-items:center; gap:0.75rem; background:rgba(248,113,113,0.06);">
+                <svg style="width:1.125rem;height:1.125rem;color:#f87171;flex-shrink:0" fill="none" stroke="#f87171"
+                    viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                 </svg>
@@ -1598,7 +1622,8 @@
             <!-- Body -->
             <div style="padding:1.25rem; display:flex; flex-direction:column; gap:1.25rem;">
                 <p style="font-size:0.875rem; color:#94a3b8; line-height:1.6;">
-                    Sözlükteki <span style="font-weight:700; color:#e2e8f0;" id="bulk-confirm-count">0</span> kelimeyi kalıcı olarak silmek istiyor musunuz?
+                    Sözlükteki <span style="font-weight:700; color:#e2e8f0;" id="bulk-confirm-count">0</span> kelimeyi
+                    kalıcı olarak silmek istiyor musunuz?
                 </p>
                 <div style="display:flex; gap:0.5rem; justify-content:flex-end;">
                     <button onclick="closeBulkConfirm1()"
@@ -1608,7 +1633,8 @@
                     </button>
                     <button onclick="finalBulkDelete()"
                         style="padding:0.5rem 1rem; font-size:0.8125rem; font-weight:600; border-radius:0.5rem; background:rgba(248,113,113,0.15); color:#fca5a5; border:1px solid rgba(248,113,113,0.35); cursor:pointer; transition:all 0.15s;"
-                        onmouseover="this.style.background='rgba(248,113,113,0.25)'" onmouseout="this.style.background='rgba(248,113,113,0.15)'">
+                        onmouseover="this.style.background='rgba(248,113,113,0.25)'"
+                        onmouseout="this.style.background='rgba(248,113,113,0.15)'">
                         Evet, Sil
                     </button>
                 </div>

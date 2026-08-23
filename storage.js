@@ -8,6 +8,13 @@ const DB_VERSION = 1;
 const STORE_NAME = 'app_state';
 
 let dbInstance = null;
+const storageChannel = new BroadcastChannel('srt_cevirmen_storage_sync');
+
+storageChannel.onmessage = function(event) {
+    if (event.data && event.data.key) {
+        window.dispatchEvent(new CustomEvent('storage_sync', { detail: { key: event.data.key } }));
+    }
+};
 
 function openDB() {
     return new Promise((resolve, reject) => {
@@ -47,7 +54,10 @@ async function setStorageItem(key, data) {
                 const tx = db.transaction(STORE_NAME, 'readwrite');
                 const store = tx.objectStore(STORE_NAME);
                 const req = store.put(data, key);
-                req.onsuccess = () => resolve(true);
+                req.onsuccess = () => {
+                    storageChannel.postMessage({ key: key });
+                    resolve(true);
+                };
                 req.onerror = () => {
                     console.warn(`IndexedDB save failed for ${key}, falling back to localStorage.`);
                     try {
@@ -60,12 +70,14 @@ async function setStorageItem(key, data) {
             });
         } else {
             localStorage.setItem(key, JSON.stringify(data));
+            storageChannel.postMessage({ key: key });
             return true;
         }
     } catch (err) {
         console.error('Storage Save Exception:', err);
         try {
             localStorage.setItem(key, JSON.stringify(data));
+            storageChannel.postMessage({ key: key });
         } catch (e) { }
         return false;
     }
