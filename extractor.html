@@ -27,6 +27,29 @@
             border-color: rgba(99, 102, 241, 0.45) !important
         }
 
+        .file-item-ext.checked-file {
+            background: rgba(56, 189, 248, 0.12) !important;
+            border-color: rgba(56, 189, 248, 0.45) !important;
+        }
+
+        .file-item-ext.selected-for-merge.checked-file {
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.12) 0%, rgba(56, 189, 248, 0.12) 100%) !important;
+            border-color: rgba(56, 189, 248, 0.45) !important;
+        }
+        .file-item .del-btn, .file-item .check-btn {
+            opacity: 0;
+            transition: opacity 0.15s, color 0.15s;
+        }
+        .file-item:hover .del-btn, .file-item:hover .check-btn {
+            opacity: 1;
+        }
+        .check-btn.checked-active {
+            opacity: 1 !important;
+        }
+        .check-btn:not(.checked-active):hover {
+            color: #34d399 !important;
+        }
+
         .ext-card {
             background: rgba(30, 41, 59, 0.6);
             border: 1px solid #334155;
@@ -386,7 +409,7 @@
         <script>
             (function () { var sw = localStorage.getItem('sidebarWidth') || '22rem'; var open = localStorage.getItem('sidebarOpen') !== 'false'; var sb = document.getElementById('file-sidebar'); var r = document.getElementById('sidebar-resizer'); if (sb && r) { if (!open) { sb.style.width = '0'; sb.style.opacity = '0'; r.style.display = 'none'; } else { sb.style.width = sw; } } })();
         </script>
-        <main class="flex-1 overflow-y-auto p-5 flex flex-col gap-5 ext-scroll" id="main-area">
+        <main class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 ext-scroll" id="main-area">
             <section id="tab-merge" class="flex-1 flex flex-col gap-4">
                 <div id="already-approved-banner" class="hidden already-approved-banner">
                     <svg class="w-5 h-5 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor"
@@ -411,7 +434,7 @@
                         </div>
                     </div>
                     <div id="merge-order-list" class="hidden mb-3">
-                        <p class="text-xs text-slate-500 mb-1.5 font-medium">Birlestirme sirasi:</p>
+                        <p class="text-xs text-slate-500 mb-1.5 font-medium">Birleştirme sırası:</p>
                         <div id="merge-order-items" class="flex flex-wrap gap-1.5"></div>
                     </div>
                     <div id="output-empty" class="empty-state">
@@ -419,8 +442,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        <p>Sol panelden dosya secin, ardindan <strong class="text-indigo-400">Birlestir</strong>
-                            butonuna basin.</p>
+                        <p>Sol panelden dosya seçin, ardından <strong class="text-indigo-400">Birleştir</strong>
+                            butonuna basın.</p>
                     </div>
                     <textarea id="output-textarea" class="output-textarea hidden"
                         placeholder="Birleştirilmiş içerik burada görünecek..." spellcheck="false"></textarea>
@@ -543,7 +566,7 @@
     </div>
     <script>
         var fileStore = {}; var collapsedFolders = new Set(); var sidebarOpen = localStorage.getItem('sidebarOpen') !== 'false';
-        var selectedFiles = new Set(); var mergeOrder = []; var outputFormat = 'srt';
+        var selectedFiles = new Set(); var checkedFiles = new Set(); var mergeOrder = []; var outputFormat = 'srt';
         var currentMergeKey = null; var currentMergeFiles = []; var approvedHistory = []; var activeTab = 'merge';
 
         window.addEventListener('DOMContentLoaded', async function () {
@@ -560,6 +583,7 @@
             var es = await getStorageItem('extractorState');
             if (es) {
                 if (es.selectedFiles) selectedFiles = new Set(es.selectedFiles.filter(function (k) { return fileStore[k]; }));
+                if (es.checkedFiles) checkedFiles = new Set(es.checkedFiles.filter(function (k) { return fileStore[k]; }));
                 if (es.mergeOrder) mergeOrder = es.mergeOrder.filter(function (k) { return fileStore[k]; });
                 if (es.outputFormat) outputFormat = es.outputFormat;
                 if (es.currentMergeKey) currentMergeKey = es.currentMergeKey;
@@ -583,7 +607,7 @@
         async function saveState() {
             await setStorageItem('collapsedFolders', Array.from(collapsedFolders));
             var ta = document.getElementById('output-textarea');
-            await setStorageItem('extractorState', { selectedFiles: Array.from(selectedFiles), mergeOrder: mergeOrder, outputFormat: outputFormat, currentMergeKey: currentMergeKey, currentMergeFiles: currentMergeFiles, lastOutput: ta ? ta.value : '' });
+            await setStorageItem('extractorState', { selectedFiles: Array.from(selectedFiles), checkedFiles: Array.from(checkedFiles), mergeOrder: mergeOrder, outputFormat: outputFormat, currentMergeKey: currentMergeKey, currentMergeFiles: currentMergeFiles, lastOutput: ta ? ta.value : '' });
             await setStorageItem('extractorHistory', approvedHistory);
         }
 
@@ -662,7 +686,7 @@
             var ip = depth > 0 ? (depth * 10 + 4) : 4;
             if (node.type === 'folder') {
                 var ic = collapsedFolders.has(node.fullPath);
-                var fi = document.createElement('div'); fi.className = 'file-item border border-slate-700/40 hover:border-slate-600 rounded-lg px-2 py-1.5 cursor-pointer flex items-center gap-1.5 text-slate-300 hover:text-slate-100 select-none bg-slate-800/40'; fi.style.paddingLeft = ip + 'px';
+                var fi = document.createElement('div'); fi.className = 'file-item group border border-slate-700/40 hover:border-slate-600 rounded-lg px-2 py-1.5 cursor-pointer flex items-center gap-1.5 text-slate-300 hover:text-slate-100 select-none bg-slate-800/40'; fi.style.paddingLeft = ip + 'px';
                 var csvg = ic ? '<svg class="w-3.5 h-3.5 text-slate-500 shrink-0 transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>' : '<svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>';
                 var fsvg = ic ? '<svg class="w-4 h-4 text-amber-500/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /></svg>' : '<svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" /></svg>';
                 fi.innerHTML = csvg + fsvg + '<span class="text-xs font-semibold truncate flex-1" title="' + node.name + '">' + node.name + '</span><button class="del-btn text-slate-600 hover:text-red-400 shrink-0 p-0.5"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>';
@@ -672,18 +696,28 @@
                 if (!ic && node.sortedChildren) { var cc = document.createElement('div'); cc.className = 'space-y-1 mt-0.5'; node.sortedChildren.forEach(function (c) { renderNode(c, cc, depth + 1); }); par.appendChild(cc); }
             } else {
                 var isSel = selectedFiles.has(node.key); var oi = mergeOrder.indexOf(node.key);
-                var fi2 = document.createElement('div'); fi2.className = 'file-item file-item-ext border border-slate-700/60 rounded-lg px-2 py-1.5 cursor-pointer flex items-center gap-1.5 group' + (isSel ? ' selected-for-merge' : '');
+                var isChecked = checkedFiles.has(node.key);
+                var fi2 = document.createElement('div'); fi2.className = 'file-item file-item-ext border border-slate-700/60 rounded-lg px-2 py-1.5 cursor-pointer flex items-center gap-1.5 group' + (isSel ? ' selected-for-merge' : '') + (isChecked ? ' checked-file' : '');
                 fi2.style.paddingLeft = ip + 'px'; fi2.style.position = 'relative';
                 var ic2 = isSel ? 'text-indigo-400' : 'text-slate-500'; var nc = isSel ? 'text-indigo-300 font-semibold' : 'text-slate-300';
                 var cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'file-select-checkbox'; cb.checked = isSel;
                 cb.addEventListener('change', function (e) { e.stopPropagation(); toggleFileSelection(node.key); });
                 fi2.appendChild(cb);
-                fi2.insertAdjacentHTML('beforeend', '<svg class="w-4 h-4 shrink-0 ' + ic2 + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><span class="text-xs truncate flex-1 ' + nc + '" title="' + node.fullPath + '">' + node.name + '</span><span class="text-xs text-slate-500 shrink-0">' + node.subtitlesCount + '</span><button class="del-btn text-slate-600 hover:text-red-400 shrink-0 p-0.5 ml-0.5" data-key="' + node.key + '"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>');
+                var checkBtnClass = isChecked ? 'text-sky-400 checked-active shrink-0 p-0.5 ml-0.5' : 'text-slate-600 shrink-0 p-0.5 ml-0.5';
+                var checkSvg = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+                fi2.insertAdjacentHTML('beforeend', '<svg class="w-4 h-4 shrink-0 ' + ic2 + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><span class="text-xs truncate flex-1 ' + nc + '" title="' + node.fullPath + '">' + node.name + '</span><span class="text-xs text-slate-500 shrink-0">' + node.subtitlesCount + '</span><button class="check-btn ' + checkBtnClass + '" data-key="' + node.key + '" title="Kontrol Edildi Olarak İşaretle">' + checkSvg + '</button><button class="del-btn text-slate-600 hover:text-red-400 shrink-0 p-0.5 ml-0.5" data-key="' + node.key + '"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>');
                 if (isSel && oi >= 0) { var badge = document.createElement('div'); badge.className = 'order-badge'; badge.textContent = oi + 1; fi2.appendChild(badge); }
+                fi2.querySelector('.check-btn').addEventListener('click', function (e) { e.stopPropagation(); toggleFileChecked(node.key); });
                 fi2.querySelector('.del-btn').addEventListener('click', function (e) { e.stopPropagation(); removeFile(node.key); });
-                fi2.addEventListener('click', function (e) { if (e.target.closest('.del-btn') || e.target === cb) return; toggleFileSelection(node.key); });
+                fi2.addEventListener('click', function (e) { if (e.target.closest('.del-btn') || e.target.closest('.check-btn') || e.target === cb) return; toggleFileSelection(node.key); });
                 par.appendChild(fi2);
             }
+        }
+        function toggleFileChecked(key) {
+            if (checkedFiles.has(key)) checkedFiles.delete(key);
+            else checkedFiles.add(key);
+            renderFileList();
+            saveState();
         }
         function toggleFileSelection(key) {
             if (selectedFiles.has(key)) { selectedFiles.delete(key); mergeOrder = mergeOrder.filter(function (k) { return k !== key; }); }
@@ -849,19 +883,19 @@
         }
         function removeFile(key) {
             if (!confirm('"' + key + '" dosyasini kaldirmak istediginize emin misiniz?')) return;
-            delete fileStore[key]; selectedFiles.delete(key); mergeOrder = mergeOrder.filter(function (k) { return k !== key; });
+            delete fileStore[key]; selectedFiles.delete(key); checkedFiles.delete(key); mergeOrder = mergeOrder.filter(function (k) { return k !== key; });
             setStorageItem('fileStore', fileStore); renderFileList(); saveState();
         }
         function removeFolder(fp) {
             if (!confirm('"' + fp + '" klasorunu kaldirmak istediginize emin misiniz?')) return;
             var prefix = fp + '/';
-            Object.keys(fileStore).filter(function (k) { return k === fp || k.startsWith(prefix); }).forEach(function (k) { delete fileStore[k]; selectedFiles.delete(k); mergeOrder = mergeOrder.filter(function (m) { return m !== k; }); });
+            Object.keys(fileStore).filter(function (k) { return k === fp || k.startsWith(prefix); }).forEach(function (k) { delete fileStore[k]; selectedFiles.delete(k); checkedFiles.delete(k); mergeOrder = mergeOrder.filter(function (m) { return m !== k; }); });
             setStorageItem('fileStore', fileStore); renderFileList(); saveState();
         }
         function clearAllFiles() {
             if (Object.keys(fileStore).length === 0) return;
             if (!confirm('Tum dosyalar kaldirilacak. Emin misiniz?')) return;
-            fileStore = {}; selectedFiles.clear(); mergeOrder = []; currentMergeKey = null; currentMergeFiles = [];
+            fileStore = {}; selectedFiles.clear(); checkedFiles.clear(); mergeOrder = []; currentMergeKey = null; currentMergeFiles = [];
             var ta = document.getElementById('output-textarea'); ta.value = ''; ta.classList.add('hidden');
             document.getElementById('output-empty').classList.remove('hidden');
             document.getElementById('output-actions').classList.add('hidden'); document.getElementById('output-actions').classList.remove('flex');

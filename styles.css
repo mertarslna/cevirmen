@@ -343,6 +343,14 @@ video {
     gap: 1rem;
 }
 
+.gap-5 {
+    gap: 1.25rem;
+}
+
+.gap-6 {
+    gap: 1.5rem;
+}
+
 /* ── GRID ───────────────────────────────────────────────────── */
 /* md:grid-cols-2 is in responsive section */
 
@@ -390,6 +398,10 @@ video {
 
 .p-4 {
     padding: 1rem;
+}
+
+.p-5 {
+    padding: 1.25rem;
 }
 
 .p-6 {
