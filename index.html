@@ -884,6 +884,43 @@
                         message: `Çift tırnak (") yerine farklı bir tırnak işareti (kıvrık vb.) kullanılmış.`
                     });
                 }
+
+                // 6. "." (veya ! ?) olmadan büyük harf: satır ortasında cümle sonu
+                //    noktalama işareti olmaksızın büyük harfle başlayan kelime kontrolü
+                (function () {
+                    // Satır başındaki diyalog önekini (- — –) temizle
+                    const cleanedLine = trimmed.replace(/^[-\u2014\u2013\s]+/, '');
+                    if (!cleanedLine) return;
+
+                    // Satırı boşluklara göre böl
+                    const parts = cleanedLine.split(/\s+/);
+                    // Birinci kelimeyi atla (satır başı)
+                    for (let p = 1; p < parts.length; p++) {
+                        const word = parts[p];
+                        if (!word) continue;
+
+                        const firstChar = word.charAt(0);
+                        // Büyük harfle mi başlıyor? (Latin + Türkçe büyük harfler)
+                        if (!/[A-Z\u00C7\u011E\u0130\u00D6\u015E\u00DC]/.test(firstChar)) continue;
+
+                        // Önceki kelimenin son karakterine bak
+                        const prevWord = parts[p - 1];
+                        const lastPunct = prevWord ? prevWord.slice(-1) : '';
+
+                        // Cümle sonu noktalama varsa → zaten kural 1 kapsar, atla
+                        if (/[.!?]/.test(lastPunct)) continue;
+
+                        // Sözlük izni var mı?
+                        const cleanWord = word.replace(/[.,;:!?]+$/, '');
+                        if (isWordAllowed(cleanWord)) continue;
+
+                        // Bağlam snippet'i: önceki 1-2 kelime + bu kelime
+                        const snippetWords = parts.slice(Math.max(0, p - 2), p + 2).join(' ');
+                        issues.push({
+                            message: `Nokta (. ! ?) olmadan büyük harf kullanılmış: "...${snippetWords}..."`
+                        });
+                    }
+                })();
             });
 
             // B. Multi-line / Dialogue Line Continuity (Konuşma Satırı Geçişleri)
@@ -969,6 +1006,14 @@
 
                     if (!isAllowed) {
                         warnings[i + 1] = `Bir önceki altyazı bloğu (#${subtitles[i].index}) virgül (${lastCharCurr}) ile bittiği halde bu blok büyük harfle başlamış.`;
+                    }
+                } else if (!/[.!?,;:]/.test(lastCharCurr) && /[A-ZÇĞİÖŞÜ]/.test(firstCharNext)) {
+                    // Nokta (. ! ?) olmadan biten blok + büyük harfle başlayan sonraki blok
+                    const firstWordNextLine = cleanedNext.split(/\s+/)[0].replace(/[.,;:!?]+$/, '');
+                    const isAllowed = isWordAllowed(firstWordNextLine);
+
+                    if (!isAllowed) {
+                        warnings[i + 1] = `Bir önceki altyazı bloğu (#${subtitles[i].index}) nokta (. ! ?) olmadan bittiği halde bu blok büyük harfle başlamış: "${currText.slice(-20)}" ➤ "${cleanedNext.slice(0, 20)}"`;
                     }
                 }
             }
