@@ -110,6 +110,70 @@
             margin-top: calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));
             margin-bottom: calc(0.25rem * var(--tw-space-y-reverse));
         }
+
+        /* ── Subtitle Card Redesign ─────────────────────────────────── */
+        .sub-fieldset {
+            position: relative;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            transition: border-color 0.2s ease;
+            background: transparent;
+        }
+        .sub-fieldset:focus-within {
+            border-color: #6366f1;
+        }
+        .sub-fieldset-label {
+            position: absolute;
+            top: -0.52rem;
+            left: 0.75rem;
+            background: #1e293b;
+            padding: 0 0.3rem;
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: #64748b;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            pointer-events: none;
+            user-select: none;
+        }
+        .sub-fieldset-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #a5b4fc;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .sub-fieldset-textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #f1f5f9;
+            font-size: 1rem;
+            line-height: 1.65;
+            resize: none;
+            min-height: 3.5rem;
+            padding-top: 0.2rem;
+        }
+        .sub-action-btn {
+            padding: 0.45rem;
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: transparent;
+        }
+        /* Boş trans-status span'ı gizle */
+        span[id^="trans-status"]:empty {
+            display: none;
+        }
     </style>
 </head>
 
@@ -697,9 +761,7 @@
                     ? '<svg class="w-3.5 h-3.5 text-slate-500 shrink-0 transform -rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>'
                     : '<svg class="w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
 
-                const folderIconSvg = isCollapsed
-                    ? '<svg class="w-4 h-4 text-amber-500/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>'
-                    : '<svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"/></svg>';
+                const folderIconSvg = '';
 
                 folderItem.innerHTML =
                     chevronSvg +
@@ -744,8 +806,6 @@
                 const nameColor = isActive ? 'text-indigo-300 font-semibold' : 'text-slate-300';
 
                 fileItem.innerHTML =
-                    '<svg class="w-4 h-4 shrink-0 ' + iconColor + '" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' +
                     '<span class="text-xs truncate flex-1 ' + nameColor + '" title="' + node.fullPath + '">' + node.name + '</span>' +
                     '<span class="text-xs text-slate-500 shrink-0">' + node.subtitlesCount + '</span>' +
                     '<button class="del-btn text-slate-600 hover:text-red-400 shrink-0 p-0.5 ml-0.5" title="Dosyayı kaldır" data-key="' + node.key + '">' +
@@ -836,17 +896,57 @@
             el.style.height = el.scrollHeight + 'px';
         }
 
+        // ── XSS Helpers ───────────────────────────────────────────────
+        function escapeHTML(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function escapeAttr(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // ── Copy subtitle text to clipboard ───────────────────────────
+        function copySubtitleText(index) {
+            const text = (getActiveSubtitles()[index] || {}).text || '';
+            const doVisual = function(btn) {
+                if (!btn) return;
+                const prev = btn.getAttribute('data-prev-class') || '';
+                btn.classList.add('text-emerald-400');
+                setTimeout(function() { btn.classList.remove('text-emerald-400'); }, 1000);
+            };
+            const btn = document.querySelector('#sub-card-' + index + ' [title="Metni panoya kopyala"]');
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(function() { doVisual(btn); });
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                doVisual(btn);
+            }
+        }
+
         function generateLineStatsHTML(lines) {
             return lines.map(function (line, i) {
                 const s = getLineStats(line);
                 const over = s.charCount > CHAR_LIMIT;
-                const warn = over ? '<svg class="w-4 h-4 text-red-400 inline ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>' : '';
-                return '<div class="flex justify-between items-center text-xs text-slate-400 bg-slate-900/50 px-2 py-1.5 rounded border ' + (over ? 'border-red-900/50 bg-red-900/10' : 'border-slate-800') + '">' +
-                    '<span class="text-slate-300 truncate max-w-[250px]">Satır ' + (i + 1) + ' ' + warn + '</span>' +
-                    '<div class="flex gap-3 shrink-0">' +
-                    '<span class="' + (over ? 'text-red-300' : '') + '">Karakter: <strong class="' + (over ? 'char-warning text-red-400 font-bold' : 'text-slate-200') + '">' + s.charCount + '</strong></span>' +
-                    '<span>Kelime: <strong class="text-slate-200">' + s.wordCount + '</strong></span>' +
-                    '</div></div>';
+                const warnIcon = over ? '<svg class="w-3.5 h-3.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>' : '';
+                return '<div class="flex justify-between items-center text-xs py-1.5' + (i > 0 ? ' border-t border-slate-700/40' : '') + '">' +
+                    '<span class="flex items-center gap-1 ' + (over ? 'text-red-400' : 'text-slate-500') + '">Satır ' + (i + 1) + warnIcon + '</span>' +
+                    '<div class="flex items-center gap-2 shrink-0">' +
+                    '<span class="' + (over ? 'text-red-300' : 'text-slate-400') + '">Karakter: <strong class="' + (over ? 'char-warning text-red-400 font-bold' : 'text-slate-200') + '">' + s.charCount + '</strong></span>' +
+                    '<span class="text-slate-600">|</span>' +
+                    '<span class="text-slate-400">Kelime: <strong class="text-slate-200">' + s.wordCount + '</strong></span>' +
+                    '</div>' +
+                    '</div>';
             }).join('');
         }
 
@@ -1091,45 +1191,56 @@
             subtitles.forEach(function (sub, idx) {
                 const card = document.createElement('div');
                 card.id = 'sub-card-' + idx;
-                card.className = 'bg-slate-800 border border-slate-700 rounded-xl p-4 flex gap-4 items-start shadow-sm focus-within:border-indigo-500/50 transition-colors duration-200 fade-in';
+                card.className = 'bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-sm hover:border-slate-600/80 transition-colors duration-200 fade-in';
 
                 card.innerHTML =
-                    '<div class="flex flex-col gap-2 w-20 shrink-0 items-center justify-center pt-2">' +
-                    '<span class="text-sm font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded-md w-full text-center">#' + sub.index + '</span>' +
-                    '<div class="flex gap-1 mt-1 w-full justify-center">' +
-                    '<button onclick="deleteSubtitle(' + idx + ')" class="text-red-400 hover:text-red-300 text-xs transition p-1 hover:bg-red-900/20 rounded" title="Bu bloğu sil">' +
+                    // ── TOP ROW: index badge | time fieldset | action buttons ──
+                    '<div class="flex items-center gap-3 mb-3">' +
+                    '<span class="text-sm font-bold text-slate-500 bg-slate-900 px-2 py-1.5 rounded-lg shrink-0 min-w-[3rem] text-center">#' + sub.index + '</span>' +
+                    '<div class="flex-1 sub-fieldset">' +
+                    '<span class="sub-fieldset-label">Zaman Aralığı</span>' +
+                    '<input type="text" value="' + escapeAttr(sub.time) + '" onchange="updateTime(' + idx + ', this.value)" class="sub-fieldset-input">' +
+                    '</div>' +
+                    '<div class="flex gap-1.5 shrink-0">' +
+                    // Tekil Çeviri (sol)  
+                    '<button onclick="fetchSuggestion(' + idx + ')" id="trans-btn-' + idx + '" class="sub-action-btn text-violet-400 border-violet-500/30 hover:bg-violet-500/20 hover:text-violet-300 hover:border-violet-400/60" title="Tekil Çeviri">' +
+                    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>' +
+                    '</button>' +
+                    // Sil
+                    '<button onclick="deleteSubtitle(' + idx + ')" class="sub-action-btn text-red-400/80 border-red-500/20 hover:bg-red-500/10 hover:text-red-400 hover:border-red-400/50" title="Bu bloğu sil">' +
                     '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
                     '</button>' +
-                    '<button onclick="insertSubtitleAt(' + idx + ')" class="text-emerald-400 hover:text-emerald-300 text-xs transition p-1 hover:bg-emerald-900/20 rounded" title="Altına yeni satır ekle">' +
+                    // Altına ekle
+                    '<button onclick="insertSubtitleAt(' + idx + ')" class="sub-action-btn text-emerald-400/80 border-emerald-500/20 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-400/50" title="Altına yeni satır ekle">' +
                     '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>' +
+                    '</button>' +
+                    // Kopyala
+                    '<button onclick="copySubtitleText(' + idx + ')" class="sub-action-btn text-slate-400 border-slate-600/30 hover:bg-slate-700 hover:text-slate-200 hover:border-slate-500/50" title="Metni panoya kopyala">' +
+                    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>' +
                     '</button>' +
                     '</div>' +
                     '</div>' +
-                    '<div class="flex-1 space-y-3">' +
-                    '<div class="flex flex-wrap gap-2 items-center">' +
-                    '<input type="text" value="' + sub.time + '" onchange="updateTime(' + idx + ', this.value)" ' +
-                    'class="flex-1 min-w-[200px] bg-slate-900 border border-slate-700 rounded px-3 py-1.5 text-sm text-indigo-300 font-mono focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">' +
-                    '<button onclick="fetchSuggestion(' + idx + ')" id="trans-btn-' + idx + '" class="bg-violet-600/80 hover:bg-violet-500 text-white px-3 py-1.5 rounded text-xs font-medium transition shrink-0 flex items-center gap-1">' +
-                    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>' +
-                    'Tekil Çeviri</button>' +
+                    // ── TEXTAREA FIELDSET ──
+                    '<div class="sub-fieldset mt-2">' +
+                    '<span class="sub-fieldset-label">Çeviri Metni</span>' +
+                    '<textarea id="textarea-' + idx + '" rows="2" oninput="handleTextChange(' + idx + ', this)" class="sub-fieldset-textarea">' + escapeHTML(sub.text) + '</textarea>' +
                     '</div>' +
-                    '<textarea id="textarea-' + idx + '" rows="2" oninput="handleTextChange(' + idx + ', this)" ' +
-                    'class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-base text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">' + sub.text + '</textarea>' +
-                    '<div id="suggestion-box-' + idx + '" class="' + (sub.suggestion ? '' : 'hidden') + ' bg-violet-900/20 border border-violet-800/50 rounded-lg p-3 space-y-2 relative overflow-hidden">' +
+                    // Trans status
+                    '<span id="trans-status-' + idx + '" class="text-xs text-violet-400 font-medium block mt-2"></span>' +
+                    // Suggestion box
+                    '<div id="suggestion-box-' + idx + '" class="' + (sub.suggestion ? '' : 'hidden') + ' bg-violet-900/20 border border-violet-800/50 rounded-lg p-3 space-y-2 relative overflow-hidden mt-1">' +
                     '<div class="absolute top-0 left-0 w-1 h-full bg-violet-500"></div>' +
                     '<div class="flex justify-between items-center text-xs pl-2">' +
                     '<span class="font-semibold text-violet-400">✨ AI Önerisi</span>' +
                     '<button onclick="applySuggestion(' + idx + ')" class="bg-violet-600 hover:bg-violet-500 text-white px-3 py-1 rounded transition font-medium">Metne Uygula</button>' +
                     '</div>' +
-                    '<p id="suggestion-text-' + idx + '" class="text-sm text-violet-200 italic pl-2">' + sub.suggestion + '</p>' +
+                    '<p id="suggestion-text-' + idx + '" class="text-sm text-violet-200 italic pl-2">' + escapeHTML(sub.suggestion) + '</p>' +
                     '</div>' +
-                    '<span id="trans-status-' + idx + '" class="text-xs text-violet-400 font-medium block h-4"></span>' +
-                    '<div id="line-stats-' + idx + '" class="space-y-1.5 pt-1 border-t border-slate-700/50">' +
+                    // Grammar warnings
+                    '<div id="grammar-box-' + idx + '" class="mt-3">' + generateGrammarWarningsHTML(sub.text, crossWarnings[idx]) + '</div>' +
+                    // ── STATS ROW ──
+                    '<div id="line-stats-' + idx + '" class="mt-3">' +
                     generateLineStatsHTML(sub.text.split('\n')) +
-                    '</div>' +
-                    '<div id="grammar-box-' + idx + '">' +
-                    generateGrammarWarningsHTML(sub.text, crossWarnings[idx]) +
-                    '</div>' +
                     '</div>';
 
                 container.appendChild(card);
