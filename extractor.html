@@ -642,11 +642,24 @@
                 reader.readAsText(obj.file, 'UTF-8');
             });
         }
+        // Converts an SRT timecode string "HH:MM:SS,mmm --> ..." to milliseconds
+        function srtTimeToMs(timeStr) {
+            var start = (timeStr || '').split('-->')[0].trim();
+            var m = start.match(/^(\d+):(\d+):(\d+)[,.](\d+)/);
+            if (!m) return 0;
+            return (+m[1]) * 3600000 + (+m[2]) * 60000 + (+m[3]) * 1000 + (+m[4]);
+        }
+        // Sorts a subtitles array in-place by start timecode and re-indexes entries
+        function sortSubsByTime(subs) {
+            subs.sort(function (a, b) { return srtTimeToMs(a.time) - srtTimeToMs(b.time); });
+            subs.forEach(function (s, i) { s.index = i + 1; });
+            return subs;
+        }
         function parseSRT(data) {
             var c = data.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             var blocks = c.trim().split(/\n\s*\n/); var subs = [];
             blocks.forEach(function (b) { var l = b.split('\n'); if (l.length >= 3) subs.push({ index: subs.length + 1, time: l[1].trim(), text: l.slice(2).join('\n'), suggestion: '' }); });
-            return subs;
+            return sortSubsByTime(subs);
         }
 
         function buildFileTree() {
