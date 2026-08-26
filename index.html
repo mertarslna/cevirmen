@@ -120,9 +120,11 @@
             transition: border-color 0.2s ease;
             background: transparent;
         }
+
         .sub-fieldset:focus-within {
             border-color: #6366f1;
         }
+
         .sub-fieldset-label {
             position: absolute;
             top: -0.52rem;
@@ -137,6 +139,7 @@
             pointer-events: none;
             user-select: none;
         }
+
         .sub-fieldset-input {
             width: 100%;
             background: transparent;
@@ -147,6 +150,7 @@
             font-size: 0.875rem;
             font-weight: 500;
         }
+
         .sub-fieldset-textarea {
             width: 100%;
             background: transparent;
@@ -159,6 +163,7 @@
             min-height: 3.5rem;
             padding-top: 0.2rem;
         }
+
         .sub-action-btn {
             padding: 0.45rem;
             border-radius: 0.5rem;
@@ -170,6 +175,7 @@
             cursor: pointer;
             background: transparent;
         }
+
         /* Boş trans-status span'ı gizle */
         span[id^="trans-status"]:empty {
             display: none;
@@ -184,13 +190,13 @@
         class="sticky top-0 z-50 bg-slate-800/90 backdrop-blur-md border-b border-slate-700 py-3 px-5 shadow-lg flex flex-wrap justify-between items-center gap-3">
         <div class="flex items-center gap-3">
             <button id="sidebar-toggle" onclick="toggleSidebar()" title="Dosya panelini aç/kapat"
-                class="p-2 rounded-lg hover:bg-slate-700 transition text-slate-400 hover:text-slate-200">
+                class="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-slate-700 transition text-slate-400 hover:text-slate-200">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
             <a href="compare.html"
-                class="p-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 transition text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-medium border border-slate-600/50 ml-2"
+                class="flex items-center gap-2 px-3 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition-all text-slate-300 hover:text-white text-sm font-medium shadow-md ml-2"
                 title="Altyazı Karşılaştırma Sayfası">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -199,7 +205,7 @@
                 Karşılaştırma Yap
             </a>
             <a href="extractor.html"
-                class="p-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 transition text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-medium border border-slate-600/50 ml-2"
+                class="flex items-center gap-2 px-3 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition-all text-slate-300 hover:text-white text-sm font-medium shadow-md ml-2"
                 title="Kontrol Et">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -208,7 +214,7 @@
                 Kontrol Et
             </a>
             <button onclick="openDictionaryModal()"
-                class="p-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 transition text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-medium border border-slate-600/50 ml-2"
+                class="flex items-center gap-2 px-3 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition-all text-slate-300 hover:text-white text-sm font-medium shadow-md ml-2"
                 title="Özel İsimler Sözlüğü">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -225,8 +231,8 @@
 
             <!-- Warning Navigator -->
             <div id="warning-navigator"
-                class="hidden flex items-center border border-slate-700 rounded-lg overflow-hidden bg-slate-900 shadow-md">
-                <div class="px-3 py-1.5 flex items-center gap-1.5 text-amber-400 border-r border-slate-700 cursor-pointer hover:bg-slate-800 transition select-none"
+                class="hidden flex items-stretch h-10 border border-slate-700 rounded-lg overflow-hidden bg-slate-900 shadow-md">
+                <div class="px-3 flex items-center gap-1.5 text-amber-400 border-r border-slate-700 cursor-pointer hover:bg-slate-800 transition select-none"
                     onclick="navigateWarning(1)" title="Sonraki Uyarıya Git">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -235,14 +241,14 @@
                     <span id="warning-nav-text" class="text-sm font-medium whitespace-nowrap">0 Uyarı</span>
                 </div>
                 <button onclick="navigateWarning(-1)"
-                    class="px-2.5 py-1.5 hover:bg-slate-800 text-slate-300 hover:text-white transition border-r border-slate-700"
+                    class="px-2.5 hover:bg-slate-800 text-slate-300 hover:text-white transition border-r border-slate-700 flex items-center justify-center"
                     title="Önceki Uyarı">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
                     </svg>
                 </button>
                 <button onclick="navigateWarning(1)"
-                    class="px-2.5 py-1.5 hover:bg-slate-800 text-slate-300 hover:text-white transition"
+                    class="px-2.5 hover:bg-slate-800 text-slate-300 hover:text-white transition flex items-center justify-center"
                     title="Sonraki Uyarı">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -251,9 +257,9 @@
             </div>
 
             <div
-                class="flex items-center border border-slate-700 rounded-lg overflow-hidden bg-slate-900 focus-within:border-indigo-500 transition-colors shadow-md">
+                class="flex items-stretch h-10 border border-slate-700 rounded-lg overflow-hidden bg-slate-900 focus-within:border-indigo-500 transition-colors shadow-md">
                 <select id="target-lang" onchange="triggerAutoSave()"
-                    class="bg-transparent px-3 py-1.5 text-sm text-indigo-300 font-medium focus:outline-none cursor-pointer">
+                    class="bg-transparent px-3 text-sm text-indigo-300 font-medium focus:outline-none cursor-pointer">
                     <option value="tr" selected>Türkçe (tr)</option>
                     <option value="en">İngilizce (en)</option>
                     <option value="zh-CN">Çince (zh-CN)</option>
@@ -263,29 +269,27 @@
                     <option value="ru">Rusça (ru)</option>
                 </select>
                 <button id="btn-translate-all" onclick="translateAll()"
-                    class="bg-violet-600 hover:bg-violet-500 text-white px-4 py-1.5 text-sm font-medium transition flex items-center gap-2 h-full">
+                    class="bg-violet-600 hover:bg-violet-500 text-white px-4 text-sm font-medium transition flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                     </svg>
-                    Tümünü Çevir
                 </button>
             </div>
 
 
 
             <div
-                class="flex items-center ml-2 border border-slate-700 rounded-lg overflow-hidden bg-slate-900 focus-within:border-indigo-500 transition-colors shadow-md">
+                class="flex items-stretch h-10 ml-2 border border-slate-700 rounded-lg overflow-hidden bg-slate-900 focus-within:border-indigo-500 transition-colors shadow-md">
                 <input type="text" id="export-filename" value="yeni_altyazi" placeholder="Dosya adı"
-                    class="bg-transparent px-3 py-1.5 text-sm text-slate-200 focus:outline-none w-32 placeholder-slate-500">
-                <span class="text-slate-500 text-sm pr-2 select-none">.srt</span>
+                    class="bg-transparent px-3 text-sm text-slate-200 focus:outline-none w-32 placeholder-slate-500 flex items-center">
+                <span class="text-slate-500 text-sm pr-2 select-none flex items-center">.srt</span>
                 <button onclick="exportSRT()"
-                    class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 text-sm font-medium transition flex items-center gap-2 h-full">
+                    class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 text-sm font-medium transition flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    İndir
                 </button>
             </div>
         </div>
@@ -929,15 +933,15 @@
         // ── Copy subtitle text to clipboard ───────────────────────────
         function copySubtitleText(index) {
             const text = (getActiveSubtitles()[index] || {}).text || '';
-            const doVisual = function(btn) {
+            const doVisual = function (btn) {
                 if (!btn) return;
                 const prev = btn.getAttribute('data-prev-class') || '';
                 btn.classList.add('text-emerald-400');
-                setTimeout(function() { btn.classList.remove('text-emerald-400'); }, 1000);
+                setTimeout(function () { btn.classList.remove('text-emerald-400'); }, 1000);
             };
             const btn = document.querySelector('#sub-card-' + index + ' [title="Metni panoya kopyala"]');
             if (navigator.clipboard) {
-                navigator.clipboard.writeText(text).then(function() { doVisual(btn); });
+                navigator.clipboard.writeText(text).then(function () { doVisual(btn); });
             } else {
                 var ta = document.createElement('textarea');
                 ta.value = text;
