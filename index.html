@@ -160,7 +160,7 @@
             font-size: 1.15rem;
             line-height: 1.65;
             resize: none;
-            min-height: 3.5rem;
+            min-height: 1.8rem;
             padding-top: 0.2rem;
         }
 
@@ -1252,7 +1252,7 @@
                     // ── TEXTAREA FIELDSET ──
                     '<div class="sub-fieldset mt-2">' +
                     '<span class="sub-fieldset-label">Çeviri Metni</span>' +
-                    '<textarea id="textarea-' + idx + '" rows="2" oninput="handleTextChange(' + idx + ', this)" class="sub-fieldset-textarea">' + escapeHTML(sub.text) + '</textarea>' +
+                    '<textarea id="textarea-' + idx + '" rows="1" oninput="handleTextChange(' + idx + ', this)" class="sub-fieldset-textarea">' + escapeHTML(sub.text) + '</textarea>' +
                     '</div>' +
                     // Trans status
                     '<span id="trans-status-' + idx + '" class="text-xs text-violet-400 font-medium block mt-2"></span>' +
