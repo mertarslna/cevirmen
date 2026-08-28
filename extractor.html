@@ -659,7 +659,7 @@
         function parseSRT(data) {
             var c = data.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             var blocks = c.trim().split(/\n\s*\n/); var subs = [];
-            blocks.forEach(function (b) { var l = b.split('\n'); if (l.length >= 3) subs.push({ index: subs.length + 1, time: l[1].trim(), text: l.slice(2).join('\n'), suggestion: '' }); });
+            blocks.forEach(function (b) { var l = b.split('\n'); if (l.length >= 3) subs.push({ index: subs.length + 1, time: l[1].trim(), text: l.slice(2).map(function(line){ return line.trim(); }).join('\n'), suggestion: '' }); });
             return sortSubsByTime(subs);
         }
 

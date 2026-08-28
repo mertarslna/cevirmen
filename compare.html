@@ -654,7 +654,7 @@
                 const lines = block.split('\n');
                 if (lines.length >= 3) {
                     const timeLine = lines[1].trim();
-                    const text = lines.slice(2).join('\n');
+                    const text = lines.slice(2).map(l => l.trim()).join('\n');
                     const parsedTime = parseTimeRange(timeLine);
                     subs.push({
                         index: idx + 1,
