@@ -665,7 +665,7 @@
             blocks.forEach(block => {
                 const lines = block.split('\n');
                 if (lines.length >= 3) {
-                    subs.push({ index: subs.length + 1, time: lines[1].trim(), text: lines.slice(2).map(l => l.trim()).join('\n'), suggestion: '' });
+                    subs.push({ index: subs.length + 1, time: lines[1].trim(), text: lines.slice(2).map(l => l.trim().replace(/\s+/g, ' ')).join('\n'), suggestion: '' });
                 }
             });
             return sortSubsByTime(subs);
