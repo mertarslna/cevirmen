@@ -578,7 +578,29 @@
 
         async function loadState() {
             var ss = await getStorageItem('fileStore');
-            if (ss && Object.keys(ss).length > 0) fileStore = ss;
+            if (ss && Object.keys(ss).length > 0) {
+                var migrated = false;
+                Object.keys(ss).forEach(function (key) {
+                    var entry = ss[key];
+                    if (entry.subtitles) {
+                        entry.subtitles.forEach(function (sub) {
+                            var originalText = sub.text;
+                            var originalSug = sub.suggestion;
+                            sub.text = cleanQuotes(sub.text);
+                            if (sub.suggestion) {
+                                sub.suggestion = cleanQuotes(sub.suggestion);
+                            }
+                            if (sub.text !== originalText || sub.suggestion !== originalSug) {
+                                migrated = true;
+                            }
+                        });
+                    }
+                });
+                fileStore = ss;
+                if (migrated) {
+                    await setStorageItem('fileStore', fileStore);
+                }
+            }
             var sc = await getStorageItem('collapsedFolders');
             if (sc && Array.isArray(sc)) collapsedFolders = new Set(sc);
             var es = await getStorageItem('extractorState');
@@ -656,8 +678,18 @@
             subs.forEach(function (s, i) { s.index = i + 1; });
             return subs;
         }
+        function cleanQuotes(text) {
+            if (!text) return text;
+            return text
+                .replace(/[’‘´`′＇՚ʻʼʽ‛]/g, "'")
+                .replace(/[“”„‟＂]/g, '"')
+                .replace(/[？⸮]/g, '?')
+                .replace(/[！﹗]/g, '!');
+        }
+
         function parseSRT(data) {
-            var c = data.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            var cleanedData = cleanQuotes(data);
+            var c = cleanedData.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             var blocks = c.trim().split(/\n\s*\n/); var subs = [];
             blocks.forEach(function (b) { var l = b.split('\n'); if (l.length >= 3) subs.push({ index: subs.length + 1, time: l[1].trim(), text: l.slice(2).map(function(line){ return line.trim().replace(/\s+/g, ' '); }).join('\n'), suggestion: '' }); });
             return sortSubsByTime(subs);

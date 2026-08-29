@@ -458,6 +458,26 @@
 
             if (storedFileStore && Object.keys(storedFileStore).length > 0) {
                 fileStore = storedFileStore;
+                let migrated = false;
+                Object.keys(fileStore).forEach(key => {
+                    const file = fileStore[key];
+                    if (file.subtitles) {
+                        file.subtitles.forEach(sub => {
+                            const originalText = sub.text;
+                            const originalSug = sub.suggestion;
+                            sub.text = cleanQuotes(sub.text);
+                            if (sub.suggestion) {
+                                sub.suggestion = cleanQuotes(sub.suggestion);
+                            }
+                            if (sub.text !== originalText || sub.suggestion !== originalSug) {
+                                migrated = true;
+                            }
+                        });
+                    }
+                });
+                if (migrated) {
+                    await setStorageItem('fileStore', fileStore);
+                }
                 renderFileList();
                 if (storedActiveFile && fileStore[storedActiveFile]) {
                     switchToFile(storedActiveFile);
@@ -658,8 +678,18 @@
             return subs;
         }
 
+        function cleanQuotes(text) {
+            if (!text) return text;
+            return text
+                .replace(/[’‘´`′＇՚ʻʼʽ‛]/g, "'")
+                .replace(/[“”„‟＂]/g, '"')
+                .replace(/[？⸮]/g, '?')
+                .replace(/[！﹗]/g, '!');
+        }
+
         function parseSRT(data) {
-            const clean = data.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            const cleanedData = cleanQuotes(data);
+            const clean = cleanedData.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             const blocks = clean.trim().split(/\n\s*\n/);
             const subs = [];
             blocks.forEach(block => {
@@ -1051,16 +1081,30 @@
                     });
                 }
                 // 4. Kıvrık tek tırnak kontrolü
-                if (/[‘’´`]/.test(line)) {
+                if (/[’‘´`′＇՚ʻʼʽ‛]/.test(line)) {
                     issues.push({
-                        message: `Tek tırnak (') yerine farklı bir tırnak işareti (kıvrık vb.) kullanılmış.`
+                        message: `Tek tırnak (') veya kesme işareti yerine farklı bir tırnak işareti (kıvrık vb.) kullanılmış.`
                     });
                 }
 
                 // 5. Kıvrık çift tırnak kontrolü
-                if (/[“”]/.test(line)) {
+                if (/[“”„‟＂]/.test(line)) {
                     issues.push({
                         message: `Çift tırnak (") yerine farklı bir tırnak işareti (kıvrık vb.) kullanılmış.`
+                    });
+                }
+
+                // 6. Yanlış soru işareti kontrolü
+                if (/[？⸮]/.test(line)) {
+                    issues.push({
+                        message: `Soru işareti (?) yerine farklı bir soru işareti (geniş vb.) kullanılmış.`
+                    });
+                }
+
+                // 7. Yanlış ünlem işareti kontrolü
+                if (/[！﹗]/.test(line)) {
+                    issues.push({
+                        message: `Ünlem işareti (!) yerine farklı bir ünlem işareti (geniş vb.) kullanılmış.`
                     });
                 }
 

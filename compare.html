@@ -366,9 +366,19 @@
             });
         }
 
+        function cleanQuotes(text) {
+            if (!text) return text;
+            return text
+                .replace(/[’‘´`′＇՚ʻʼʽ‛]/g, "'")
+                .replace(/[“”„‟＂]/g, '"')
+                .replace(/[？⸮]/g, '?')
+                .replace(/[！﹗]/g, '!');
+        }
+
         // Parse subtitles in editor format (for shared storage compatibility)
         function parseSubtitlesForEditor(data) {
-            const clean = data.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            const cleanedData = cleanQuotes(data);
+            const clean = cleanedData.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             const blocks = clean.trim().split(/\n\s*\n/);
             const subs = [];
             blocks.forEach(block => {
@@ -647,7 +657,8 @@
         }
 
         function parseSRT(data) {
-            const clean = data.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            const cleanedData = cleanQuotes(data);
+            const clean = cleanedData.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             const blocks = clean.trim().split(/\n\s*\n/);
             const subs = [];
             blocks.forEach((block, idx) => {
@@ -846,6 +857,7 @@
             // Load shared file store (same as index.html)
             const sharedStore = await getStorageItem('fileStore');
             if (sharedStore && Object.keys(sharedStore).length > 0) {
+                let migrated = false;
                 // Ensure each entry has a `content` field for SRT parsing
                 Object.keys(sharedStore).forEach(key => {
                     const entry = sharedStore[key];
@@ -855,8 +867,31 @@
                             `${i + 1}\n${s.time}\n${s.text}`
                         ).join('\n\n');
                     }
+                    if (entry.subtitles) {
+                        entry.subtitles.forEach(sub => {
+                            const originalText = sub.text;
+                            const originalSug = sub.suggestion;
+                            sub.text = cleanQuotes(sub.text);
+                            if (sub.suggestion) {
+                                sub.suggestion = cleanQuotes(sub.suggestion);
+                            }
+                            if (sub.text !== originalText || sub.suggestion !== originalSug) {
+                                migrated = true;
+                            }
+                        });
+                    }
+                    if (entry.content) {
+                        const originalContent = entry.content;
+                        entry.content = cleanQuotes(entry.content);
+                        if (entry.content !== originalContent) {
+                            migrated = true;
+                        }
+                    }
                 });
                 fileStore = sharedStore;
+                if (migrated) {
+                    await setStorageItem('fileStore', fileStore);
+                }
             }
 
             // Load compare-specific state
