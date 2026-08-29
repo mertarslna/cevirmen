@@ -684,7 +684,8 @@
                 .replace(/[’‘´`′＇՚ʻʼʽ‛]/g, "'")
                 .replace(/[“”„‟＂]/g, '"')
                 .replace(/[？⸮]/g, '?')
-                .replace(/[！﹗]/g, '!');
+                .replace(/[！﹗]/g, '!')
+                .replace(/…/g, '...');
         }
 
         function parseSRT(data) {
@@ -1105,6 +1106,13 @@
                 if (/[！﹗]/.test(line)) {
                     issues.push({
                         message: `Ünlem işareti (!) yerine farklı bir ünlem işareti (geniş vb.) kullanılmış.`
+                    });
+                }
+
+                // 8. Yanlış üç nokta işareti kontrolü
+                if (/…/.test(line)) {
+                    issues.push({
+                        message: `Üç nokta (...) yerine farklı bir karakter (tek karakterlik üç nokta vb.) kullanılmış.`
                     });
                 }
 

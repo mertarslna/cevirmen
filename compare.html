@@ -372,7 +372,8 @@
                 .replace(/[’‘´`′＇՚ʻʼʽ‛]/g, "'")
                 .replace(/[“”„‟＂]/g, '"')
                 .replace(/[？⸮]/g, '?')
-                .replace(/[！﹗]/g, '!');
+                .replace(/[！﹗]/g, '!')
+                .replace(/…/g, '...');
         }
 
         // Parse subtitles in editor format (for shared storage compatibility)
