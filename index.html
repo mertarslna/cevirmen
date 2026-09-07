@@ -822,8 +822,7 @@
                             break;
                         }
 
-                        // Otherwise it's a blank line within the subtitle text
-                        textLines.push('');
+                        // Otherwise it's a blank line within the subtitle text — skip it
                         i = j;
                     } else {
                         textLines.push(lines[i].trim().replace(/\s+/g, ' '));
