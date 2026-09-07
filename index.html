@@ -1660,10 +1660,20 @@
             return { charLimitWarningsCount, grammarWarningsCount, total: charLimitWarningsCount + grammarWarningsCount };
         }
 
+        function cleanSubText(text) {
+            // Remove empty lines, trim each line, then rejoin
+            return text.split('\n')
+                .map(function (l) { return l.trimEnd(); })
+                .filter(function (l) { return l.trim() !== ''; })
+                .join('\n');
+        }
+
         function doDownloadSRT(subs, filename) {
             if (!subs || !subs.length) return;
             sortSubsByTime(subs);
-            var content = subs.map(function (s, i) { return (i + 1) + '\n' + s.time + '\n' + s.text; }).join('\n\n');
+            var content = subs.map(function (s, i) {
+                return (i + 1) + '\n' + s.time + '\n' + cleanSubText(s.text);
+            }).join('\n\n');
             var name = filename || 'altyazi';
             if (!name.toLowerCase().endsWith('.srt')) name += '.srt';
             var blob = new Blob([content], { type: 'text/srt;charset=utf-8;' });
@@ -1674,6 +1684,7 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
+
 
         function exportSRT() {
             var subs = getActiveSubtitles();
@@ -1837,7 +1848,7 @@
 
                     var subs = entry.subtitles.slice();
                     sortSubsByTime(subs);
-                    var content = subs.map(function (s, i) { return (i + 1) + '\n' + s.time + '\n' + s.text; }).join('\n\n');
+                    var content = subs.map(function (s, i) { return (i + 1) + '\n' + s.time + '\n' + cleanSubText(s.text); }).join('\n\n');
                     var filePath = key;
                     if (!filePath.toLowerCase().endsWith('.srt')) filePath += '.srt';
                     zip.file(filePath, content);
@@ -1888,7 +1899,7 @@
 
                     var subs = entry.subtitles.slice();
                     sortSubsByTime(subs);
-                    var content = subs.map(function (s, i) { return (i + 1) + '\n' + s.time + '\n' + s.text; }).join('\n\n');
+                    var content = subs.map(function (s, i) { return (i + 1) + '\n' + s.time + '\n' + cleanSubText(s.text); }).join('\n\n');
                     // Preserve folder structure from key (e.g. "EP001/EP001.srt")
                     var filePath = key;
                     if (!filePath.toLowerCase().endsWith('.srt')) filePath += '.srt';
