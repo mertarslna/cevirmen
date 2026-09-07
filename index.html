@@ -568,6 +568,22 @@
 
         window.addEventListener('DOMContentLoaded', loadEditorState);
 
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') return;
+            // Close download modal if open
+            var dlModal = document.getElementById('download-modal');
+            if (dlModal && dlModal.style.display !== 'none') {
+                closeDownloadModal();
+                return;
+            }
+            // Close dictionary modal if open
+            var dictModal = document.getElementById('dictionary-modal');
+            if (dictModal && !dictModal.classList.contains('hidden')) {
+                closeDictionaryModal();
+                return;
+            }
+        });
+
         // ── SIDEBAR ──────────────────────────────────────────────────────
         let currentSidebarWidth = localStorage.getItem('sidebarWidth') || '22rem';
 
