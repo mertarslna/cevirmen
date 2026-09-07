@@ -1746,7 +1746,7 @@
             var checks = document.querySelectorAll('.dl-file-check:checked');
             if (!checks.length) { alert('En az bir dosya seçin.'); return; }
 
-            const btn = document.querySelector('#dl-panel-select button');
+            const btn = document.querySelector('#dl-panel-select button[onclick="downloadSelectedFiles()"]');
             if (btn) { btn.disabled = true; btn.textContent = 'Hazırlanıyor...'; }
 
             try {
