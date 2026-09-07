@@ -1742,17 +1742,57 @@
             closeDownloadModal();
         }
 
-        function downloadSelectedFiles() {
+        async function downloadSelectedFiles() {
             var checks = document.querySelectorAll('.dl-file-check:checked');
             if (!checks.length) { alert('En az bir dosya seçin.'); return; }
-            checks.forEach(function (chk) {
-                var key = chk.getAttribute('data-key');
-                var entry = fileStore[key];
-                if (entry && entry.subtitles && entry.subtitles.length) {
-                    doDownloadSRT(entry.subtitles, entry.name);
+
+            const btn = document.querySelector('#dl-panel-select button');
+            if (btn) { btn.disabled = true; btn.textContent = 'Hazırlanıyor...'; }
+
+            try {
+                const zip = new JSZip();
+                var keys = [];
+
+                checks.forEach(function (chk) {
+                    var key = chk.getAttribute('data-key');
+                    var entry = fileStore[key];
+                    if (!entry || !entry.subtitles || !entry.subtitles.length) return;
+
+                    var subs = entry.subtitles.slice();
+                    sortSubsByTime(subs);
+                    var content = subs.map(function (s, i) { return (i + 1) + '\n' + s.time + '\n' + s.text; }).join('\n\n');
+                    var filePath = key;
+                    if (!filePath.toLowerCase().endsWith('.srt')) filePath += '.srt';
+                    zip.file(filePath, content);
+                    keys.push(key);
+                });
+
+                // Derive zip name from common root folder, fallback to 'secilen_dosyalar'
+                var zipName = 'secilen_dosyalar';
+                if (keys.length > 0) {
+                    var slashIdx = keys[0].indexOf('/');
+                    if (slashIdx > 0) {
+                        var rootFolder = keys[0].substring(0, slashIdx);
+                        var allSameRoot = keys.every(function (k) { return k.startsWith(rootFolder + '/') || k === rootFolder; });
+                        if (allSameRoot) zipName = rootFolder;
+                    }
                 }
-            });
-            closeDownloadModal();
+
+                var blob = await zip.generateAsync({ type: 'blob' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = zipName + '.zip';
+                document.body.appendChild(a); a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                closeDownloadModal();
+            } catch (e) {
+                alert('ZIP oluşturulurken hata: ' + e.message);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<svg style="width:0.875rem;height:0.875rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Seçilenleri İndir'; }
+            }
         }
 
         async function downloadAllFiles() {
