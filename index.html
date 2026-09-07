@@ -116,7 +116,7 @@
             position: relative;
             border: 1px solid #334155;
             border-radius: 0.5rem;
-            padding: 0.5rem 0.75rem;
+            padding: 0;
             transition: border-color 0.2s ease;
             background: transparent;
         }
@@ -149,6 +149,8 @@
             font-family: 'Courier New', monospace;
             font-size: 0.9rem;
             font-weight: 500;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
         }
 
         .sub-fieldset-textarea {
@@ -161,7 +163,8 @@
             line-height: 1.65;
             resize: none;
             min-height: 1.8rem;
-            padding-top: 0.2rem;
+            padding: 0.7rem 0.75rem 0.5rem 0.75rem;
+            border-radius: 0.5rem;
         }
 
         .sub-action-btn {
@@ -1183,6 +1186,18 @@
                     if (!isAllowed) {
                         issues.push({
                             message: `Konuşma satırı sonunda (${lastCharCurr}) sonrası alt satıra büyük harfle başlanmış: "${currLine}" ➔ "${nextLine}"`
+                        });
+                    }
+                }
+
+                // Satır sonu noktalama olmadan + Alt konuşma satırı büyük harf
+                if (!/[.!?,;:]/.test(lastCharCurr) && /[A-ZÇĞİÖŞÜ]/.test(firstCharNext)) {
+                    const firstWordNextLine = cleanedNext.split(/\s+/)[0].replace(/[.,;:!?]+$/, '');
+                    const isAllowed = isWordAllowed(firstWordNextLine);
+
+                    if (!isAllowed) {
+                        issues.push({
+                            message: `Konuşma satırı sonunda noktalama işareti olmadan alt satıra büyük harfle başlanmış: "${currLine}" ➔ "${nextLine}"`
                         });
                     }
                 }
