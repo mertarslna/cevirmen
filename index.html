@@ -777,62 +777,46 @@
             const clean = cleanedData.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             const lines = clean.split('\n');
             const subs = [];
-            let i = 0;
 
-            // Helper: is a line a valid SRT timecode?
             function isTimecode(line) {
-                return /\d{1,2}:\d{2}:\d{2}[,\.]\d{1,3}\s*-->\s*\d{1,2}:\d{2}:\d{2}[,\.]\d{1,3}/.test(line);
+                return /\d{1,2}:\d{2}:\d{2}[,\.]\d{1,3}\s*-->\s*\d{1,2}:\d{2}:\d{2}[,\.]\d{1,3}/.test(line.trim());
             }
-
-            // Helper: is a line a pure index number?
             function isIndex(line) {
                 return /^\s*\d+\s*$/.test(line);
             }
 
-            while (i < lines.length) {
-                // Skip blank lines
-                while (i < lines.length && lines[i].trim() === '') i++;
-                if (i >= lines.length) break;
+            // Pass 1: find all valid block starts (index line immediately before timecode line)
+            const blockStarts = []; // each element = line index of the index line
+            for (let i = 0; i < lines.length - 1; i++) {
+                if (isIndex(lines[i]) && isTimecode(lines[i + 1])) {
+                    blockStarts.push(i);
+                }
+            }
 
-                // Expect an index line
-                if (!isIndex(lines[i])) { i++; continue; }
-                i++;
+            // Pass 2: for each block, extract text between its timecode and the next block's index
+            for (let b = 0; b < blockStarts.length; b++) {
+                const bs = blockStarts[b];
+                const timeLine = lines[bs + 1].trim();
+                const textStart = bs + 2;
+                const textEnd = (b + 1 < blockStarts.length) ? blockStarts[b + 1] : lines.length;
 
-                if (i >= lines.length) break;
-
-                // Expect a timecode line
-                const timeLine = lines[i].trim();
-                if (!isTimecode(timeLine)) { continue; }
-                i++;
-
-                // Collect text lines until we hit a blank line that is followed
-                // by a valid index+timecode pair (= true block boundary)
-                const textLines = [];
-                while (i < lines.length) {
-                    if (lines[i].trim() === '') {
-                        // Look ahead: skip consecutive blank lines
-                        let j = i + 1;
-                        while (j < lines.length && lines[j].trim() === '') j++;
-
-                        if (j >= lines.length) { i = j; break; }
-
-                        // Is next non-blank an index followed by a timecode?
-                        if (isIndex(lines[j]) && j + 1 < lines.length && isTimecode(lines[j + 1].trim())) {
-                            i = j; // real block boundary — stop here
-                            break;
-                        }
-
-                        // Otherwise it's a blank line within the subtitle text — skip it
-                        i = j;
-                    } else {
-                        textLines.push(lines[i].trim().replace(/\s+/g, ' '));
-                        i++;
+                // Trim trailing garbage: scan backwards from textEnd to find the last blank line.
+                // Everything AFTER the last blank line (before the next block start) is inter-block
+                // garbage (e.g. stray characters like "s") and should be discarded.
+                let effectiveEnd = textEnd;
+                for (let k = textEnd - 1; k >= textStart; k--) {
+                    if (lines[k].trim() === '') {
+                        effectiveEnd = k; // stop before this blank line (and anything after)
+                        break;
                     }
                 }
 
-                // Remove leading/trailing blank lines from text
-                while (textLines.length && textLines[0] === '') textLines.shift();
-                while (textLines.length && textLines[textLines.length - 1] === '') textLines.pop();
+                // Collect non-blank text lines within [textStart, effectiveEnd)
+                const textLines = [];
+                for (let k = textStart; k < effectiveEnd; k++) {
+                    const t = lines[k].trim().replace(/\s+/g, ' ');
+                    if (t !== '') textLines.push(t);
+                }
 
                 if (textLines.length > 0) {
                     subs.push({ index: subs.length + 1, time: timeLine, text: textLines.join('\n'), suggestion: '' });
@@ -841,6 +825,7 @@
 
             return sortSubsByTime(subs);
         }
+
 
 
         // ── TREE BUILDING & SORTING ──────────────────────────────────────
