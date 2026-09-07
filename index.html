@@ -1163,22 +1163,22 @@
             }
             const words = cleanText.split(' ');
             if (words.length <= 1) return cleanText;
-            
+
             let bestSplitPoint = Math.floor(words.length / 2);
             let minScore = Infinity;
             let bestIsUnderLimit = false;
-            
+
             for (let i = 1; i < words.length; i++) {
                 const line1 = words.slice(0, i).join(' ');
                 const line2 = words.slice(i).join(' ');
-                
+
                 const isUnderLimit = line1.length <= CHAR_LIMIT && line2.length <= CHAR_LIMIT;
                 const diff = Math.abs(line1.length - line2.length);
-                
+
                 // Üst satırın daha kısa olması tercih edilir (piramit yapısı)
                 const penalty = line1.length > line2.length ? 5 : 0;
                 const score = diff + penalty;
-                
+
                 if (isUnderLimit && (!bestIsUnderLimit || score < minScore)) {
                     minScore = score;
                     bestSplitPoint = i;
@@ -1201,12 +1201,12 @@
                 const s = getLineStats(line);
                 const over = s.charCount > CHAR_LIMIT;
                 const warnIcon = over ? '<svg class="w-3.5 h-3.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>' : '';
-                
+
                 let splitBtn = '';
                 if (canOptimize && index !== undefined && !buttonShown) {
                     if (over || i === lines.length - 1) {
                         const btnLabel = (optimalText.indexOf('\n') === -1) ? 'Birleştir' : (lines.length > 1 ? 'Düzelt' : 'Böl');
-                        splitBtn = '<button onclick="optimalSplit(' + index + ')" class="ml-2 bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 text-[10px] px-1.5 py-0.5 rounded transition" title="Otomatik düzenle">' + btnLabel + '</button>';
+                        splitBtn = '<button onclick="optimalSplit(' + index + ')" class="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-[11px] font-medium tracking-wide hover:bg-indigo-500/20 hover:border-indigo-400/60 hover:text-indigo-200 transition-all shadow-sm" title="Otomatik düzenle">' + btnLabel + '</button>';
                         buttonShown = true;
                     }
                 }
@@ -1227,7 +1227,7 @@
             if (!subs || !subs[index]) return;
             const currentText = subs[index].text;
             const newText = getOptimalSplitText(currentText);
-            
+
             const ta = document.getElementById('textarea-' + index);
             if (ta) {
                 ta.value = newText;
@@ -1803,10 +1803,10 @@
         }
 
         function cleanSubText(text) {
-            // Remove empty lines, trim each line, then rejoin
+            // Remove empty lines, trim each line, remove extra spaces, then rejoin
             return text.split('\n')
-                .map(function (l) { return l.trimEnd(); })
-                .filter(function (l) { return l.trim() !== ''; })
+                .map(function (l) { return l.trim().replace(/\s+/g, ' '); })
+                .filter(function (l) { return l !== ''; })
                 .join('\n');
         }
 
