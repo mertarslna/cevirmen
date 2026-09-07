@@ -366,7 +366,7 @@
                 <input id="export-filename" type="text"
                     class="px-4 bg-transparent text-sm text-slate-200 font-medium focus:outline-none placeholder-slate-500 border-r border-slate-700 transition-all"
                     style="width: 100px;"
-                    oninput="this.style.width = Math.min(Math.max(100, this.value.length * 8 + 32), 300) + 'px'"
+                    oninput="this.style.width = Math.min(((this.value.length || 9) * 8) + 32, 300) + 'px'"
                     placeholder="Dosya adı" onkeydown="if(event.key==='Enter') exportSRT()">
                 <button onclick="exportSRT()"
                     class="flex items-center justify-center gap-2 px-4 bg-indigo-600 hover:bg-indigo-500 text-white transition-colors text-sm font-medium"
@@ -1039,7 +1039,7 @@
             const filenameInput = document.getElementById('export-filename');
             if (filenameInput) {
                 filenameInput.value = entry.name.replace(/\.srt$/i, '');
-                filenameInput.style.width = Math.min(Math.max(100, filenameInput.value.length * 8 + 32), 300) + 'px';
+                filenameInput.style.width = Math.min(((filenameInput.value.length || 9) * 8) + 32, 300) + 'px';
             }
             triggerAutoSave();
         }
