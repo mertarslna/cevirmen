@@ -1156,13 +1156,59 @@
             }
         }
 
-        function generateLineStatsHTML(lines) {
+        function getOptimalSplitText(text) {
+            const cleanText = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+            if (cleanText.length <= CHAR_LIMIT) {
+                return cleanText;
+            }
+            const words = cleanText.split(' ');
+            if (words.length <= 1) return cleanText;
+            
+            let bestSplitPoint = Math.floor(words.length / 2);
+            let minDiff = Infinity;
+            
+            for (let i = 1; i < words.length; i++) {
+                const line1 = words.slice(0, i).join(' ');
+                const line2 = words.slice(i).join(' ');
+                
+                const isUnderLimit = line1.length <= CHAR_LIMIT && line2.length <= CHAR_LIMIT;
+                const diff = Math.abs(line1.length - line2.length);
+                
+                const wasUnderLimit = minDiff < Infinity && words.slice(0, bestSplitPoint).join(' ').length <= CHAR_LIMIT && words.slice(bestSplitPoint).join(' ').length <= CHAR_LIMIT;
+                
+                if (isUnderLimit && (!wasUnderLimit || diff < minDiff)) {
+                    minDiff = diff;
+                    bestSplitPoint = i;
+                } else if (!wasUnderLimit && diff < minDiff) {
+                    minDiff = diff;
+                    bestSplitPoint = i;
+                }
+            }
+            return words.slice(0, bestSplitPoint).join(' ') + '\n' + words.slice(bestSplitPoint).join(' ');
+        }
+
+        function generateLineStatsHTML(lines, index) {
+            const currentText = lines.join('\n');
+            const optimalText = currentText.trim() ? getOptimalSplitText(currentText) : currentText;
+            const canOptimize = (optimalText !== currentText);
+            let buttonShown = false;
+
             return lines.map(function (line, i) {
                 const s = getLineStats(line);
                 const over = s.charCount > CHAR_LIMIT;
                 const warnIcon = over ? '<svg class="w-3.5 h-3.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>' : '';
+                
+                let splitBtn = '';
+                if (canOptimize && index !== undefined && !buttonShown) {
+                    if (over || i === lines.length - 1) {
+                        const btnLabel = (optimalText.indexOf('\n') === -1) ? 'Birleştir' : (lines.length > 1 ? 'Düzelt' : 'Böl');
+                        splitBtn = '<button onclick="optimalSplit(' + index + ')" class="ml-2 bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 text-[10px] px-1.5 py-0.5 rounded transition" title="Otomatik düzenle">' + btnLabel + '</button>';
+                        buttonShown = true;
+                    }
+                }
+
                 return '<div class="flex justify-between items-center text-xs py-1.5' + (i > 0 ? ' border-t border-slate-700/40' : '') + '">' +
-                    '<span class="flex items-center gap-1 ' + (over ? 'text-red-400' : 'text-slate-500') + '">Satır ' + (i + 1) + warnIcon + '</span>' +
+                    '<span class="flex items-center gap-1 ' + (over ? 'text-red-400' : 'text-slate-500') + '">Satır ' + (i + 1) + warnIcon + splitBtn + '</span>' +
                     '<div class="flex items-center gap-2 shrink-0">' +
                     '<span class="' + (over ? 'text-red-300' : 'text-slate-400') + '">Karakter: <strong class="' + (over ? 'char-warning text-red-400 font-bold' : 'text-slate-200') + '">' + s.charCount + '</strong></span>' +
                     '<span class="text-slate-600">|</span>' +
@@ -1170,6 +1216,19 @@
                     '</div>' +
                     '</div>';
             }).join('');
+        }
+
+        function optimalSplit(index) {
+            const subs = getActiveSubtitles();
+            if (!subs || !subs[index]) return;
+            const currentText = subs[index].text;
+            const newText = getOptimalSplitText(currentText);
+            
+            const ta = document.getElementById('textarea-' + index);
+            if (ta) {
+                ta.value = newText;
+                handleTextChange(index, ta);
+            }
         }
 
         function isWordAllowed(word) {
@@ -1495,7 +1554,7 @@
                     '<div id="grammar-box-' + idx + '" class="mt-3">' + generateGrammarWarningsHTML(sub.text, crossWarnings[idx]) + '</div>' +
                     // ── STATS ROW ──
                     '<div id="line-stats-' + idx + '" class="mt-3">' +
-                    generateLineStatsHTML(sub.text.split('\n')) +
+                    generateLineStatsHTML(sub.text.split('\n'), idx) +
                     '</div>';
 
                 container.appendChild(card);
@@ -1574,7 +1633,7 @@
             const subs = getActiveSubtitles();
             const text = subs[index].text;
             document.getElementById('line-stats-' + index).innerHTML =
-                generateLineStatsHTML(text.split('\n'));
+                generateLineStatsHTML(text.split('\n'), index);
 
             const crossWarnings = checkCrossBlockWarnings(subs);
             document.getElementById('grammar-box-' + index).innerHTML =
