@@ -1165,7 +1165,8 @@
             if (words.length <= 1) return cleanText;
             
             let bestSplitPoint = Math.floor(words.length / 2);
-            let minDiff = Infinity;
+            let minScore = Infinity;
+            let bestIsUnderLimit = false;
             
             for (let i = 1; i < words.length; i++) {
                 const line1 = words.slice(0, i).join(' ');
@@ -1174,13 +1175,16 @@
                 const isUnderLimit = line1.length <= CHAR_LIMIT && line2.length <= CHAR_LIMIT;
                 const diff = Math.abs(line1.length - line2.length);
                 
-                const wasUnderLimit = minDiff < Infinity && words.slice(0, bestSplitPoint).join(' ').length <= CHAR_LIMIT && words.slice(bestSplitPoint).join(' ').length <= CHAR_LIMIT;
+                // Üst satırın daha kısa olması tercih edilir (piramit yapısı)
+                const penalty = line1.length > line2.length ? 5 : 0;
+                const score = diff + penalty;
                 
-                if (isUnderLimit && (!wasUnderLimit || diff < minDiff)) {
-                    minDiff = diff;
+                if (isUnderLimit && (!bestIsUnderLimit || score < minScore)) {
+                    minScore = score;
                     bestSplitPoint = i;
-                } else if (!wasUnderLimit && diff < minDiff) {
-                    minDiff = diff;
+                    bestIsUnderLimit = true;
+                } else if (!bestIsUnderLimit && score < minScore) {
+                    minScore = score;
                     bestSplitPoint = i;
                 }
             }
