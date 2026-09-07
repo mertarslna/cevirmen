@@ -136,6 +136,21 @@
             border-bottom-color: #6366f1;
         }
 
+        .dl-folder-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.5rem;
+            border-radius: 0.375rem;
+            background: rgba(99, 102, 241, 0.07);
+            margin-top: 0.25rem;
+            cursor: default;
+        }
+
+        .dl-file-indent {
+            padding-left: 1.75rem;
+        }
+
         .dl-file-item {
             display: flex;
             align-items: center;
@@ -1677,14 +1692,60 @@
             // Build file list for "select" tab
             const listEl = document.getElementById('dl-file-list');
             listEl.innerHTML = '';
+            // Group files by folder
+            const folders = {}; // folderName -> [keys]
             allKeys.forEach(function (key) {
-                const entry = fileStore[key];
-                const label = document.createElement('label');
-                label.className = 'dl-file-item';
-                label.innerHTML =
-                    '<input type="checkbox" class="dl-file-check" data-key="' + key + '" checked>' +
-                    '<span class="dl-file-name">' + (entry.name || key) + '</span>';
-                listEl.appendChild(label);
+                var slashIdx = key.indexOf('/');
+                var folder = slashIdx > 0 ? key.substring(0, slashIdx) : '__root__';
+                if (!folders[folder]) folders[folder] = [];
+                folders[folder].push(key);
+            });
+
+            Object.keys(folders).forEach(function (folder) {
+                var keys = folders[folder];
+                var folderLabel = folder === '__root__' ? 'Diğer Dosyalar' : folder;
+                var isMultiFolder = Object.keys(folders).length > 1;
+
+                if (isMultiFolder) {
+                    // Folder header row
+                    var headerDiv = document.createElement('div');
+                    headerDiv.className = 'dl-folder-header';
+                    headerDiv.setAttribute('data-folder', folder);
+                    headerDiv.innerHTML =
+                        '<input type="checkbox" class="dl-folder-check dl-file-check" data-folder="' + folder + '" checked style="accent-color:#6366f1;width:0.875rem;height:0.875rem;flex-shrink:0;">' +
+                        '<svg style="width:0.875rem;height:0.875rem;color:#818cf8;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>' +
+                        '<span style="font-size:0.775rem;font-weight:600;color:#a5b4fc;">' + folderLabel + '</span>' +
+                        '<span style="margin-left:auto;font-size:0.7rem;color:#475569;">' + keys.length + ' dosya</span>';
+                    // Folder checkbox toggles all children
+                    headerDiv.querySelector('.dl-folder-check').addEventListener('change', function (e) {
+                        var checked = e.target.checked;
+                        listEl.querySelectorAll('.dl-file-check[data-folder="' + folder + '"]').forEach(function (c) { c.checked = checked; });
+                    });
+                    listEl.appendChild(headerDiv);
+                }
+
+                // File items in this folder
+                keys.forEach(function (key) {
+                    var entry = fileStore[key];
+                    var label = document.createElement('label');
+                    label.className = 'dl-file-item' + (isMultiFolder ? ' dl-file-indent' : '');
+                    label.innerHTML =
+                        '<input type="checkbox" class="dl-file-check" data-key="' + key + '" data-folder="' + folder + '" checked>' +
+                        '<span class="dl-file-name">' + (entry.name || key) + '</span>';
+                    // Update folder checkbox state when file checkbox changes
+                    if (isMultiFolder) {
+                        label.querySelector('input').addEventListener('change', function () {
+                            var siblings = listEl.querySelectorAll('.dl-file-check[data-folder="' + folder + '"]:not(.dl-folder-check)');
+                            var checkedCount = Array.from(siblings).filter(function (c) { return c.checked; }).length;
+                            var folderChk = listEl.querySelector('.dl-folder-check[data-folder="' + folder + '"]');
+                            if (folderChk) {
+                                folderChk.checked = checkedCount > 0;
+                                folderChk.indeterminate = checkedCount > 0 && checkedCount < siblings.length;
+                            }
+                        });
+                    }
+                    listEl.appendChild(label);
+                });
             });
 
             // Show active tab
