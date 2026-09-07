@@ -939,7 +939,6 @@
             if (!fileStore[key]) return;
             activeFile = key;
             const entry = fileStore[key];
-            document.getElementById('export-filename').value = entry.name.replace(/\.srt$/i, '');
             document.getElementById('upload-section').classList.add('hidden');
             document.getElementById('editor-section').classList.remove('hidden');
             document.getElementById('action-buttons').classList.remove('hidden');
