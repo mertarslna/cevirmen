@@ -775,16 +775,74 @@
         function parseSRT(data) {
             const cleanedData = cleanQuotes(data);
             const clean = cleanedData.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-            const blocks = clean.trim().split(/\n\s*\n/);
+            const lines = clean.split('\n');
             const subs = [];
-            blocks.forEach(block => {
-                const lines = block.split('\n');
-                if (lines.length >= 3) {
-                    subs.push({ index: subs.length + 1, time: lines[1].trim(), text: lines.slice(2).map(l => l.trim().replace(/\s+/g, ' ')).join('\n'), suggestion: '' });
+            let i = 0;
+
+            // Helper: is a line a valid SRT timecode?
+            function isTimecode(line) {
+                return /\d{1,2}:\d{2}:\d{2}[,\.]\d{1,3}\s*-->\s*\d{1,2}:\d{2}:\d{2}[,\.]\d{1,3}/.test(line);
+            }
+
+            // Helper: is a line a pure index number?
+            function isIndex(line) {
+                return /^\s*\d+\s*$/.test(line);
+            }
+
+            while (i < lines.length) {
+                // Skip blank lines
+                while (i < lines.length && lines[i].trim() === '') i++;
+                if (i >= lines.length) break;
+
+                // Expect an index line
+                if (!isIndex(lines[i])) { i++; continue; }
+                i++;
+
+                if (i >= lines.length) break;
+
+                // Expect a timecode line
+                const timeLine = lines[i].trim();
+                if (!isTimecode(timeLine)) { continue; }
+                i++;
+
+                // Collect text lines until we hit a blank line that is followed
+                // by a valid index+timecode pair (= true block boundary)
+                const textLines = [];
+                while (i < lines.length) {
+                    if (lines[i].trim() === '') {
+                        // Look ahead: skip consecutive blank lines
+                        let j = i + 1;
+                        while (j < lines.length && lines[j].trim() === '') j++;
+
+                        if (j >= lines.length) { i = j; break; }
+
+                        // Is next non-blank an index followed by a timecode?
+                        if (isIndex(lines[j]) && j + 1 < lines.length && isTimecode(lines[j + 1].trim())) {
+                            i = j; // real block boundary — stop here
+                            break;
+                        }
+
+                        // Otherwise it's a blank line within the subtitle text
+                        textLines.push('');
+                        i = j;
+                    } else {
+                        textLines.push(lines[i].trim().replace(/\s+/g, ' '));
+                        i++;
+                    }
                 }
-            });
+
+                // Remove leading/trailing blank lines from text
+                while (textLines.length && textLines[0] === '') textLines.shift();
+                while (textLines.length && textLines[textLines.length - 1] === '') textLines.pop();
+
+                if (textLines.length > 0) {
+                    subs.push({ index: subs.length + 1, time: timeLine, text: textLines.join('\n'), suggestion: '' });
+                }
+            }
+
             return sortSubsByTime(subs);
         }
+
 
         // ── TREE BUILDING & SORTING ──────────────────────────────────────
         function buildFileTree() {
