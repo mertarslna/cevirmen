@@ -361,12 +361,12 @@
             </div>
 
 
-            <div id="export-section" class="flex items-center ml-2">
+            <div id="export-section" class="flex items-stretch h-10 border border-slate-700 rounded-lg overflow-hidden bg-slate-900 focus-within:border-slate-500 transition-colors shadow-md ml-2">
                 <input id="export-filename" type="text"
-                    class="h-10 px-3 bg-slate-900 border border-slate-700 rounded-l-lg text-sm text-slate-200 font-medium focus:outline-none focus:border-indigo-500 transition-colors w-40"
+                    class="w-28 px-3 bg-transparent text-sm text-slate-200 font-medium focus:outline-none placeholder-slate-500"
                     placeholder="Dosya adı" onkeydown="if(event.key==='Enter') exportSRT()">
                 <button onclick="exportSRT()"
-                    class="flex items-center gap-2 h-10 bg-indigo-600 hover:bg-indigo-500 text-white px-4 text-sm font-medium rounded-r-lg transition shadow-md border-l border-indigo-700/50" title="Aktif Dosyayı İndir">
+                    class="flex items-center justify-center gap-2 px-3 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors border-l border-slate-700 text-sm font-medium" title="Aktif Dosyayı İndir">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
