@@ -285,7 +285,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m0 10V7" />
                 </svg>
-                Karşılaştırma Yap
+                Karşılaştır
             </a>
             <a href="extractor.html"
                 class="flex items-center gap-2 px-4 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition-all text-slate-300 hover:text-white text-sm font-medium shadow-md ml-2"
@@ -294,7 +294,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Kontrol Et
+                Kontrol
             </a>
             <button onclick="openDictionaryModal()"
                 class="flex items-center gap-2 px-4 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition-all text-slate-300 hover:text-white text-sm font-medium shadow-md ml-2"
@@ -361,14 +361,16 @@
             </div>
 
 
-            <div id="export-section" class="flex items-stretch h-10 border border-slate-700 rounded-lg overflow-hidden bg-slate-900 focus-within:border-slate-500 transition-colors shadow-md ml-2">
+            <div id="export-section"
+                class="flex items-stretch h-10 border border-slate-700 rounded-lg overflow-hidden bg-slate-900 focus-within:border-slate-500 transition-colors shadow-md ml-2">
                 <input id="export-filename" type="text"
                     class="px-4 bg-transparent text-sm text-slate-200 font-medium focus:outline-none placeholder-slate-500 border-r border-slate-700 transition-all"
                     style="width: 100px;"
                     oninput="this.style.width = Math.min(Math.max(100, this.value.length * 8 + 32), 300) + 'px'"
                     placeholder="Dosya adı" onkeydown="if(event.key==='Enter') exportSRT()">
                 <button onclick="exportSRT()"
-                    class="flex items-center justify-center gap-2 px-4 bg-indigo-600 hover:bg-indigo-500 text-white transition-colors text-sm font-medium" title="Aktif Dosyayı İndir">
+                    class="flex items-center justify-center gap-2 px-4 bg-indigo-600 hover:bg-indigo-500 text-white transition-colors text-sm font-medium"
+                    title="Aktif Dosyayı İndir">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -380,7 +382,8 @@
             <button id="btn-open-download-modal" onclick="openDownloadModal()"
                 class="flex items-center gap-2 px-4 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition-all text-slate-300 hover:text-white text-sm font-medium shadow-md ml-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
                 Toplu İndir
             </button>
@@ -2188,33 +2191,47 @@
         <div id="download-modal-content"
             style="background:#1e293b; border:1px solid #334155; border-radius:0.75rem; box-shadow:0 25px 60px rgba(0,0,0,0.7); width:420px; max-width:92vw; overflow:hidden; transform:scale(0.95); opacity:0; transition:all 0.2s ease;">
             <!-- Header -->
-            <div style="padding:1rem 1.25rem; border-bottom:1px solid #334155; display:flex; align-items:center; justify-content:space-between; background:rgba(99,102,241,0.06);">
-                <h3 style="font-size:0.8125rem; font-weight:600; color:#cbd5e1; display:flex; align-items:center; gap:0.5rem;">
-                    <svg style="width:1rem;height:1rem;color:#818cf8;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            <div
+                style="padding:1rem 1.25rem; border-bottom:1px solid #334155; display:flex; align-items:center; justify-content:space-between; background:rgba(99,102,241,0.06);">
+                <h3
+                    style="font-size:0.8125rem; font-weight:600; color:#cbd5e1; display:flex; align-items:center; gap:0.5rem;">
+                    <svg style="width:1rem;height:1rem;color:#818cf8;flex-shrink:0" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
                     Dosyaları İndir
                 </h3>
-                <button onclick="closeDownloadModal()" style="color:#64748b; background:none; border:none; cursor:pointer; padding:0.25rem; border-radius:0.375rem; display:flex; align-items:center; transition:color 0.15s;"
+                <button onclick="closeDownloadModal()"
+                    style="color:#64748b; background:none; border:none; cursor:pointer; padding:0.25rem; border-radius:0.375rem; display:flex; align-items:center; transition:color 0.15s;"
                     onmouseover="this.style.color='#f1f5f9'" onmouseout="this.style.color='#64748b'">
                     <svg style="width:1.125rem;height:1.125rem" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
             <!-- Tabs -->
             <div style="display:flex; gap:0; border-bottom:1px solid #334155; background:#172032;">
-                <button id="dl-tab-select" onclick="switchDlTab('select')" class="dl-tab dl-tab-active">Seçerek İndir</button>
+                <button id="dl-tab-select" onclick="switchDlTab('select')" class="dl-tab dl-tab-active">Seçerek
+                    İndir</button>
                 <button id="dl-tab-bulk" onclick="switchDlTab('bulk')" class="dl-tab">Toplu İndir</button>
             </div>
             <!-- Panel: Select -->
-            <div id="dl-panel-select" class="hidden" style="padding:1.25rem; display:none; flex-direction:column; gap:1rem;">
+            <div id="dl-panel-select" class="hidden"
+                style="padding:1.25rem; display:none; flex-direction:column; gap:1rem;">
                 <div style="display:flex; align-items:center; justify-content:space-between;">
                     <p style="font-size:0.8125rem; color:#94a3b8;">İndirmek istediğiniz dosyaları seçin.</p>
                     <div style="display:flex; gap:0.5rem;">
-                        <button onclick="dlToggleAll(true)" style="font-size:0.7rem; color:#818cf8; background:none; border:none; cursor:pointer; padding:0.125rem 0; transition:color 0.15s;" onmouseover="this.style.color='#a5b4fc'" onmouseout="this.style.color='#818cf8'">Tümünü Seç</button>
+                        <button onclick="dlToggleAll(true)"
+                            style="font-size:0.7rem; color:#818cf8; background:none; border:none; cursor:pointer; padding:0.125rem 0; transition:color 0.15s;"
+                            onmouseover="this.style.color='#a5b4fc'" onmouseout="this.style.color='#818cf8'">Tümünü
+                            Seç</button>
                         <span style="color:#334155; font-size:0.7rem;">|</span>
-                        <button onclick="dlToggleAll(false)" style="font-size:0.7rem; color:#64748b; background:none; border:none; cursor:pointer; padding:0.125rem 0; transition:color 0.15s;" onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">Temizle</button>
+                        <button onclick="dlToggleAll(false)"
+                            style="font-size:0.7rem; color:#64748b; background:none; border:none; cursor:pointer; padding:0.125rem 0; transition:color 0.15s;"
+                            onmouseover="this.style.color='#94a3b8'"
+                            onmouseout="this.style.color='#64748b'">Temizle</button>
                     </div>
                 </div>
                 <div id="dl-file-list"
@@ -2224,19 +2241,26 @@
                     <button onclick="downloadSelectedFiles()"
                         style="display:flex; align-items:center; gap:0.5rem; background:#4f46e5; color:white; border:none; padding:0.5rem 1.25rem; border-radius:0.5rem; font-size:0.8125rem; font-weight:600; cursor:pointer; transition:background 0.15s;"
                         onmouseover="this.style.background='#6366f1'" onmouseout="this.style.background='#4f46e5'">
-                        <svg style="width:0.875rem;height:0.875rem" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        <svg style="width:0.875rem;height:0.875rem" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
                         Seçilenleri İndir
                     </button>
                 </div>
             </div>
             <!-- Panel: Bulk -->
-            <div id="dl-panel-bulk" class="hidden" style="padding:1.25rem; display:none; flex-direction:column; gap:1rem;">
-                <p style="font-size:0.8125rem; color:#94a3b8; line-height:1.6;">Yüklü tüm dosyalar, klasör yapısı korunarak tek bir <strong style="color:#a5b4fc;">.zip</strong> arşivi olarak indirilir.</p>
-                <div style="background:#0f172a; border:1px solid #1e3a5f; border-radius:0.5rem; padding:0.75rem 1rem; display:flex; align-items:center; gap:0.625rem;">
-                    <svg style="width:1rem;height:1rem;color:#6366f1;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            <div id="dl-panel-bulk" class="hidden"
+                style="padding:1.25rem; display:none; flex-direction:column; gap:1rem;">
+                <p style="font-size:0.8125rem; color:#94a3b8; line-height:1.6;">Yüklü tüm dosyalar, klasör yapısı
+                    korunarak tek bir <strong style="color:#a5b4fc;">.zip</strong> arşivi olarak indirilir.</p>
+                <div
+                    style="background:#0f172a; border:1px solid #1e3a5f; border-radius:0.5rem; padding:0.75rem 1rem; display:flex; align-items:center; gap:0.625rem;">
+                    <svg style="width:1rem;height:1rem;color:#6366f1;flex-shrink:0" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span id="dl-bulk-count" style="font-size:0.8125rem; color:#cbd5e1;">0 dosya indirilecek</span>
                 </div>
@@ -2244,8 +2268,10 @@
                     <button onclick="downloadAllFiles()"
                         style="display:flex; align-items:center; gap:0.5rem; background:#4f46e5; color:white; border:none; padding:0.5rem 1.25rem; border-radius:0.5rem; font-size:0.8125rem; font-weight:600; cursor:pointer; transition:background 0.15s;"
                         onmouseover="this.style.background='#6366f1'" onmouseout="this.style.background='#4f46e5'">
-                        <svg style="width:0.875rem;height:0.875rem" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        <svg style="width:0.875rem;height:0.875rem" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
                         Tümünü İndir
                     </button>
