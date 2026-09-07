@@ -1691,7 +1691,7 @@
 
             const modal = document.getElementById('download-modal');
             const content = document.getElementById('download-modal-content');
-            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () {
                     content.style.transform = 'scale(1)';
@@ -1705,7 +1705,7 @@
             const content = document.getElementById('download-modal-content');
             content.style.transform = 'scale(0.95)';
             content.style.opacity = '0';
-            setTimeout(function () { modal.classList.add('hidden'); }, 200);
+            setTimeout(function () { modal.style.display = 'none'; }, 200);
         }
 
         function switchDlTab(tab) {
@@ -1973,7 +1973,7 @@
 
     <!-- ── DOWNLOAD MODAL ───────────────────────────────────────────────── -->
     <div id="download-modal"
-        class="hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center"
+        style="display:none; position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); align-items:center; justify-content:center;"
         onclick="if(event.target===this) closeDownloadModal()">
         <div id="download-modal-content"
             style="background:#1e293b; border:1px solid #334155; border-radius:0.75rem; box-shadow:0 25px 60px rgba(0,0,0,0.7); width:420px; max-width:92vw; overflow:hidden; transform:scale(0.95); opacity:0; transition:all 0.2s ease;">
