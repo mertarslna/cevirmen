@@ -361,14 +361,26 @@
             </div>
 
 
+            <div id="export-section" class="flex items-center ml-2">
+                <input id="export-filename" type="text"
+                    class="h-10 px-3 bg-slate-900 border border-slate-700 rounded-l-lg text-sm text-slate-200 font-medium focus:outline-none focus:border-indigo-500 transition-colors w-40"
+                    placeholder="Dosya adı" onkeydown="if(event.key==='Enter') exportSRT()">
+                <button onclick="exportSRT()"
+                    class="flex items-center gap-2 h-10 bg-indigo-600 hover:bg-indigo-500 text-white px-4 text-sm font-medium rounded-r-lg transition shadow-md border-l border-indigo-700/50" title="Aktif Dosyayı İndir">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    İndir
+                </button>
+            </div>
 
             <button id="btn-open-download-modal" onclick="openDownloadModal()"
-                class="flex items-center gap-2 h-10 ml-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 text-sm font-medium rounded-lg transition shadow-md">
+                class="flex items-center gap-2 h-10 ml-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-4 text-sm font-medium rounded-lg transition shadow-md">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
-                İndir
+                Toplu İndir
             </button>
         </div>
     </header>
@@ -1019,6 +1031,8 @@
             document.getElementById('action-buttons').classList.add('flex');
             renderSubtitles(entry.subtitles);
             renderFileList();
+            const filenameInput = document.getElementById('export-filename');
+            if (filenameInput) filenameInput.value = entry.name.replace(/\.srt$/i, '');
             triggerAutoSave();
         }
 
@@ -1746,7 +1760,8 @@
             }
 
             var entry = activeFile && fileStore[activeFile];
-            var filename = entry ? entry.name : 'altyazi.srt';
+            var filenameInput = document.getElementById('export-filename');
+            var filename = (filenameInput && filenameInput.value.trim() !== '') ? filenameInput.value.trim() : (entry ? entry.name : 'altyazi');
             doDownloadSRT(subs, filename);
         }
 
@@ -1817,8 +1832,8 @@
                 });
             });
 
-            // Show active tab
-            switchDlTab('single');
+            // Show select tab by default
+            switchDlTab('select');
 
             const modal = document.getElementById('download-modal');
             const content = document.getElementById('download-modal-content');
@@ -1840,17 +1855,10 @@
         }
 
         function switchDlTab(tab) {
-            ['single', 'select', 'bulk'].forEach(function (t) {
+            ['select', 'bulk'].forEach(function (t) {
                 document.getElementById('dl-tab-' + t).classList.toggle('dl-tab-active', t === tab);
                 document.getElementById('dl-panel-' + t).style.display = (t === tab) ? 'flex' : 'none';
             });
-
-            // Single tab: prefill with active file name
-            if (tab === 'single') {
-                var entry = activeFile && fileStore[activeFile];
-                var defaultName = entry ? entry.name.replace(/\.srt$/i, '') : 'altyazi';
-                document.getElementById('dl-single-name').value = defaultName;
-            }
 
             // Bulk tab: show file count
             if (tab === 'bulk') {
@@ -1859,18 +1867,6 @@
             }
         }
 
-        function downloadSingleFile() {
-            var subs = getActiveSubtitles();
-            if (!subs.length) { alert('Aktif dosyada altyazı bulunamadı.'); return; }
-            var name = document.getElementById('dl-single-name').value.trim();
-            if (!name) { alert('Lütfen bir dosya adı girin.'); return; }
-            var warnStats = collectFileWarnings(subs);
-            if (warnStats.total > 0) {
-                if (!confirm('⚠️ Bu dosyada ' + warnStats.total + ' adet uyarı var. Yine de indirilsin mi?')) return;
-            }
-            doDownloadSRT(subs, name);
-            closeDownloadModal();
-        }
 
         async function downloadSelectedFiles() {
             var checks = document.querySelectorAll('.dl-file-check:checked');
@@ -2203,30 +2199,8 @@
             </div>
             <!-- Tabs -->
             <div style="display:flex; gap:0; border-bottom:1px solid #334155; background:#172032;">
-                <button id="dl-tab-single" onclick="switchDlTab('single')" class="dl-tab dl-tab-active">Aktif Dosya</button>
-                <button id="dl-tab-select" onclick="switchDlTab('select')" class="dl-tab">Seçerek İndir</button>
+                <button id="dl-tab-select" onclick="switchDlTab('select')" class="dl-tab dl-tab-active">Seçerek İndir</button>
                 <button id="dl-tab-bulk" onclick="switchDlTab('bulk')" class="dl-tab">Toplu İndir</button>
-            </div>
-            <!-- Panel: Single -->
-            <div id="dl-panel-single" style="padding:1.25rem; display:none; flex-direction:column; gap:1rem;">
-                <p style="font-size:0.8125rem; color:#94a3b8; line-height:1.6;">Şu an açık olan dosyayı belirttiğiniz isimle indirin.</p>
-                <div style="display:flex; gap:0.5rem; align-items:center;">
-                    <input id="dl-single-name" type="text" placeholder="Dosya adı"
-                        style="flex:1; background:#0f172a; border:1px solid #334155; border-radius:0.5rem; padding:0.5rem 0.75rem; font-size:0.8125rem; color:#e2e8f0; outline:none; transition:border-color 0.15s;"
-                        onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#334155'"
-                        onkeydown="if(event.key==='Enter') downloadSingleFile()">
-                    <span style="font-size:0.8125rem; color:#475569; white-space:nowrap;">.srt</span>
-                </div>
-                <div style="display:flex; justify-content:flex-end;">
-                    <button onclick="downloadSingleFile()"
-                        style="display:flex; align-items:center; gap:0.5rem; background:#4f46e5; color:white; border:none; padding:0.5rem 1.25rem; border-radius:0.5rem; font-size:0.8125rem; font-weight:600; cursor:pointer; transition:background 0.15s;"
-                        onmouseover="this.style.background='#6366f1'" onmouseout="this.style.background='#4f46e5'">
-                        <svg style="width:0.875rem;height:0.875rem" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                        </svg>
-                        İndir
-                    </button>
-                </div>
             </div>
             <!-- Panel: Select -->
             <div id="dl-panel-select" class="hidden" style="padding:1.25rem; display:none; flex-direction:column; gap:1rem;">
