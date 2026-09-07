@@ -363,7 +363,9 @@
 
             <div id="export-section" class="flex items-stretch h-10 border border-slate-700 rounded-lg overflow-hidden bg-slate-900 focus-within:border-slate-500 transition-colors shadow-md ml-2">
                 <input id="export-filename" type="text"
-                    class="w-28 px-3 bg-transparent text-sm text-slate-200 font-medium focus:outline-none placeholder-slate-500 border-r border-slate-700"
+                    class="px-3 bg-transparent text-sm text-slate-200 font-medium focus:outline-none placeholder-slate-500 border-r border-slate-700 transition-all"
+                    style="width: 100px;"
+                    oninput="this.style.width = Math.min(Math.max(100, this.value.length * 8 + 32), 300) + 'px'"
                     placeholder="Dosya adı" onkeydown="if(event.key==='Enter') exportSRT()">
                 <button onclick="exportSRT()"
                     class="flex items-center justify-center gap-2 px-3 bg-indigo-600 hover:bg-indigo-500 text-white transition-colors text-sm font-medium" title="Aktif Dosyayı İndir">
@@ -1032,7 +1034,10 @@
             renderSubtitles(entry.subtitles);
             renderFileList();
             const filenameInput = document.getElementById('export-filename');
-            if (filenameInput) filenameInput.value = entry.name.replace(/\.srt$/i, '');
+            if (filenameInput) {
+                filenameInput.value = entry.name.replace(/\.srt$/i, '');
+                filenameInput.style.width = Math.min(Math.max(100, filenameInput.value.length * 8 + 32), 300) + 'px';
+            }
             triggerAutoSave();
         }
 
