@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 
 <head>
@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="srtlogo.png" type="image/png">
     <script src="storage.js"></script>
+    <script src="srt-utils.js"></script>
+    <script src="sidebar.js"></script>
     <style>
         .file-item-ext {
             position: relative;
@@ -571,6 +573,7 @@
         var currentMergeKey = null; var currentMergeFiles = []; var approvedHistory = []; var activeTab = 'merge';
 
         window.addEventListener('DOMContentLoaded', async function () {
+            initSidebarResizer();
             await loadState(); renderFileList(); updateHistoryBadge();
             var aiTA = document.getElementById('ai-response-textarea');
             aiTA.addEventListener('input', function () { document.getElementById('ai-char-count').textContent = aiTA.value.length + ' karakter'; });
@@ -634,25 +637,9 @@
             await setStorageItem('extractorHistory', approvedHistory);
         }
 
-        var currentSidebarWidth = localStorage.getItem('sidebarWidth') || '22rem';
-        function toggleSidebar() {
-            var sb = document.getElementById('file-sidebar'); var r = document.getElementById('sidebar-resizer');
-            sb.style.transition = 'width 0.3s ease, opacity 0.3s ease'; sidebarOpen = !sidebarOpen; localStorage.setItem('sidebarOpen', sidebarOpen);
-            if (sidebarOpen) { sb.style.width = currentSidebarWidth; sb.style.opacity = '1'; r.style.display = 'block'; }
-            else { currentSidebarWidth = sb.style.width || '22rem'; sb.style.width = '0'; sb.style.opacity = '0'; r.style.display = 'none'; }
-            setTimeout(function () { sb.style.transition = ''; }, 300);
-        }
-        var resizer = document.getElementById('sidebar-resizer'); var sidebar = document.getElementById('file-sidebar'); var isResizing = false;
-        resizer.addEventListener('mousedown', function () { isResizing = true; document.body.style.cursor = 'col-resize'; document.body.classList.add('select-none'); });
-        document.addEventListener('mousemove', function (e) { if (!isResizing) return; var r = sidebar.getBoundingClientRect(); var w = e.clientX - r.left; if (w < 150) w = 150; if (w > 600) w = 600; sidebar.style.width = w + 'px'; currentSidebarWidth = w + 'px'; });
-        document.addEventListener('mouseup', function () { if (isResizing) { isResizing = false; document.body.style.cursor = ''; document.body.classList.remove('select-none'); localStorage.setItem('sidebarWidth', currentSidebarWidth); } });
+        // toggleSidebar(), initSidebarResizer(), currentSidebarWidth -- sidebar.js
 
-        function handleFilesFromInput(ev) {
-            var rf = [...ev.target.files].filter(function (f) { return f.name.endsWith('.srt'); });
-            if (!rf.length) return;
-            loadFilesWithPaths(rf.map(function (f) { return { file: f, path: f.webkitRelativePath || f.name }; }));
-            ev.target.value = '';
-        }
+        // handleFilesFromInput() -- sidebar.js
         function loadFilesWithPaths(fos) {
             var loaded = 0;
             fos.forEach(function (obj) {
@@ -665,28 +652,7 @@
                 reader.readAsText(obj.file, 'UTF-8');
             });
         }
-        // Converts an SRT timecode string "HH:MM:SS,mmm --> ..." to milliseconds
-        function srtTimeToMs(timeStr) {
-            var start = (timeStr || '').split('-->')[0].trim();
-            var m = start.match(/^(\d+):(\d+):(\d+)[,.](\d+)/);
-            if (!m) return 0;
-            return (+m[1]) * 3600000 + (+m[2]) * 60000 + (+m[3]) * 1000 + (+m[4]);
-        }
-        // Sorts a subtitles array in-place by start timecode and re-indexes entries
-        function sortSubsByTime(subs) {
-            subs.sort(function (a, b) { return srtTimeToMs(a.time) - srtTimeToMs(b.time); });
-            subs.forEach(function (s, i) { s.index = i + 1; });
-            return subs;
-        }
-        function cleanQuotes(text) {
-            if (!text) return text;
-            return text
-                .replace(/[’‘´`′＇՚ʻʼʽ‛]/g, "'")
-                .replace(/[“”„‟＂]/g, '"')
-                .replace(/[？⸮]/g, '?')
-                .replace(/[！﹗]/g, '!')
-                .replace(/…/g, '...');
-        }
+        // srtTimeToMs(), sortSubsByTime(), cleanQuotes() -- srt-utils.js
 
         function parseSRT(data) {
             var cleanedData = cleanQuotes(data);
@@ -696,24 +662,7 @@
             return sortSubsByTime(subs);
         }
 
-        function buildFileTree() {
-            var root = { name: '', fullPath: '', type: 'folder', children: {} };
-            Object.keys(fileStore).forEach(function (key) {
-                var parts = key.split('/'); var cur = root;
-                for (var i = 0; i < parts.length; i++) {
-                    var p = parts[i]; var isF = (i === parts.length - 1); var cp = cur.fullPath ? cur.fullPath + '/' + p : p;
-                    if (isF) { cur.children[p] = { name: p, fullPath: key, type: 'file', key: key, subtitlesCount: fileStore[key].subtitles ? fileStore[key].subtitles.length : 0 }; }
-                    else { if (!cur.children[p]) cur.children[p] = { name: p, fullPath: cp, type: 'folder', children: {} }; cur = cur.children[p]; }
-                }
-            });
-            return root;
-        }
-        function sortTree(node) {
-            if (node.type !== 'folder' || !node.children) return [];
-            var list = Object.keys(node.children).map(function (k) { var c = node.children[k]; if (c.type === 'folder') c.sortedChildren = sortTree(c); return c; });
-            list.sort(function (a, b) { if (a.type !== b.type) return a.type === 'folder' ? -1 : 1; return a.name.localeCompare(b.name, 'tr', { numeric: true, sensitivity: 'base' }); });
-            return list;
-        }
+        // buildFileTree(), sortTree() -- sidebar.js
         function renderFileList() {
             var list = document.getElementById('file-list'); var ce = document.getElementById('file-count'); list.innerHTML = '';
             var keys = Object.keys(fileStore);
@@ -869,7 +818,7 @@
             var fc = document.getElementById('ai-merge-files'); fc.innerHTML = '';
             currentMergeFiles.forEach(function (name, i) {
                 var s = document.createElement('span'); s.className = 'flex items-center gap-1 text-xs bg-slate-800 border border-slate-700 rounded-full px-2 py-0.5 text-slate-400';
-                s.innerHTML = '<span class="text-[9px] w-4 h-4 rounded-full bg-indigo-600/50 text-indigo-300 font-bold flex items-center justify-center">' + (i + 1) + '</span><span class="max-w-[120px] truncate" title="' + escHtml(name) + '">' + escHtml(name) + '</span>';
+                s.innerHTML = '<span class="text-[9px] w-4 h-4 rounded-full bg-indigo-600/50 text-indigo-300 font-bold flex items-center justify-center">' + (i + 1) + '</span><span class="max-w-[120px] truncate" title="' + escapeHTML(name) + '">' + escapeHTML(name) + '</span>';
                 fc.appendChild(s);
             });
         }
@@ -902,9 +851,9 @@
                 var item = document.createElement('div'); item.className = 'history-item approved';
                 var ds = new Date(entry.date).toLocaleString('tr-TR');
                 item.innerHTML = '<div class="flex items-start justify-between gap-2 mb-2"><div class="flex items-center gap-2"><div class="dot-pulse"></div><span class="text-xs font-semibold text-emerald-300">Onaylandi</span><span class="text-xs text-slate-500">' + ds + '</span></div><div class="flex items-center gap-1"><button onclick="reloadHistoryEntry(' + idx + ')" class="text-xs text-indigo-400 hover:text-indigo-300 transition px-2 py-1 rounded hover:bg-indigo-900/30"><svg class="w-3.5 h-3.5 inline mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>Yeniden Ac</button><button onclick="deleteHistoryEntry(' + idx + ')" class="text-xs text-red-400/70 hover:text-red-400 transition p-1 rounded hover:bg-red-900/20"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div></div>' +
-                    '<div class="flex flex-wrap gap-1 mb-2">' + entry.files.map(function (f, i) { return '<span class="text-[10px] bg-slate-800 border border-slate-700 rounded-full px-2 py-0.5 text-slate-400 flex items-center gap-1"><span class="text-[8px] w-3.5 h-3.5 rounded-full bg-indigo-600/40 text-indigo-300 font-bold flex items-center justify-center">' + (i + 1) + '</span>' + escHtml(f) + '</span>'; }).join('') + '</div>' +
+                    '<div class="flex flex-wrap gap-1 mb-2">' + entry.files.map(function (f, i) { return '<span class="text-[10px] bg-slate-800 border border-slate-700 rounded-full px-2 py-0.5 text-slate-400 flex items-center gap-1"><span class="text-[8px] w-3.5 h-3.5 rounded-full bg-indigo-600/40 text-indigo-300 font-bold flex items-center justify-center">' + (i + 1) + '</span>' + escapeHTML(f) + '</span>'; }).join('') + '</div>' +
                     '<span class="text-[10px] text-slate-600 font-mono bg-slate-900 px-2 py-0.5 rounded inline-block mb-2">ID: ' + entry.key + '</span>' +
-                    '<div class="bg-slate-900/50 border border-slate-700/50 rounded-lg p-2.5"><span class="text-violet-400 font-semibold text-[10px] uppercase tracking-wider block mb-1">AI Yaniti Onizleme</span><p class="text-xs text-slate-300 leading-relaxed line-clamp-3">' + escHtml(entry.preview) + (entry.aiResponse.length > 150 ? '...' : '') + '</p></div>';
+                    '<div class="bg-slate-900/50 border border-slate-700/50 rounded-lg p-2.5"><span class="text-violet-400 font-semibold text-[10px] uppercase tracking-wider block mb-1">AI Yaniti Onizleme</span><p class="text-xs text-slate-300 leading-relaxed line-clamp-3">' + escapeHTML(entry.preview) + (entry.aiResponse.length > 150 ? '...' : '') + '</p></div>';
                 list.appendChild(item);
             });
         }
@@ -960,10 +909,7 @@
             });
             if (tab === 'ai') updateAIPanel();
         }
-        function escHtml(str) {
-            if (!str) return '';
-            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-        }
+        // escapeHTML() --> srt-utils.js
         function saveMergedChanges() {
             if (outputFormat !== 'srt') {
                 alert("Değişiklikleri kaydetmek için sağ üstten 'Tam SRT' formatını seçmiş olmalısınız. 'Sadece Metin' formatındayken orijinal dosyalara geri kayıt yapılamaz.");

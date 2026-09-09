@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="srtlogo.png" type="image/png">
     <script src="storage.js"></script>
+    <script src="srt-utils.js"></script>
+    <script src="sidebar.js"></script>
 </head>
 
 <body class="bg-slate-900 text-slate-100 h-screen overflow-hidden flex flex-col font-sans">
@@ -205,68 +207,7 @@
         let comparisonActive = false;
 
         // ── SIDEBAR & UI ──────────────────────────────────────────────────
-        let currentSidebarWidth = localStorage.getItem('sidebarWidth') || '22rem';
-
-        function toggleSidebar() {
-            const sb = document.getElementById('file-sidebar');
-            const resizer = document.getElementById('sidebar-resizer');
-
-            // Re-enable transition just for the toggle animation
-            sb.style.transition = 'width 0.3s ease, opacity 0.3s ease';
-
-            sidebarOpen = !sidebarOpen;
-            localStorage.setItem('sidebarOpen', sidebarOpen);
-
-            if (sidebarOpen) {
-                sb.style.width = currentSidebarWidth;
-                sb.style.opacity = '1';
-                resizer.style.display = 'block';
-            } else {
-                currentSidebarWidth = sb.style.width || '22rem';
-                sb.style.width = '0';
-                sb.style.opacity = '0';
-                resizer.style.display = 'none';
-            }
-
-            // Clean up transition after animation so resize is instant
-            setTimeout(() => {
-                sb.style.transition = '';
-            }, 300);
-        }
-
-        // ── SIDEBAR RESIZE LOGIC ──────────────────────────────────────────
-        const resizer = document.getElementById('sidebar-resizer');
-        const sidebar = document.getElementById('file-sidebar');
-        let isResizing = false;
-
-        resizer.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            document.body.style.cursor = 'col-resize';
-            document.body.classList.add('select-none'); // Prevent text selection
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isResizing) return;
-            // Calculate new width (mouse X position minus sidebar's starting X)
-            const sidebarRect = sidebar.getBoundingClientRect();
-            let newWidth = e.clientX - sidebarRect.left;
-
-            // Set constraints
-            if (newWidth < 150) newWidth = 150;
-            if (newWidth > 600) newWidth = 600;
-
-            sidebar.style.width = newWidth + 'px';
-            currentSidebarWidth = newWidth + 'px';
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (isResizing) {
-                isResizing = false;
-                document.body.style.cursor = '';
-                document.body.classList.remove('select-none');
-                localStorage.setItem('sidebarWidth', currentSidebarWidth);
-            }
-        });
+        // toggleSidebar(), initSidebarResizer(), currentSidebarWidth -- sidebar.js
 
         function handleDragOver(e) {
             e.preventDefault();
@@ -303,43 +244,7 @@
             }
         }
 
-        function handleFilesFromInput(event) {
-            const rawFiles = [...event.target.files].filter(f => f.name.endsWith('.srt'));
-            if (!rawFiles.length) return;
-            const fileObjs = rawFiles.map(f => ({ file: f, path: f.webkitRelativePath || f.name }));
-            loadFilesWithPaths(fileObjs);
-            event.target.value = '';
-        }
-
-        async function readEntriesRecursively(entries, fileObjs) {
-            for (const entry of entries) {
-                if (entry.isFile && entry.name.endsWith('.srt')) {
-                    await new Promise((resolve) => {
-                        entry.file(f => {
-                            const relPath = entry.fullPath.startsWith('/') ? entry.fullPath.substring(1) : entry.fullPath;
-                            fileObjs.push({ file: f, path: relPath });
-                            resolve();
-                        });
-                    });
-                } else if (entry.isDirectory) {
-                    const dirReader = entry.createReader();
-                    const childEntries = await readAllDirectoryEntries(dirReader);
-                    await readEntriesRecursively(childEntries, fileObjs);
-                }
-            }
-        }
-        function readAllDirectoryEntries(dirReader) {
-            return new Promise((resolve) => {
-                let entries = [];
-                function readBatch() {
-                    dirReader.readEntries((results) => {
-                        if (!results.length) resolve(entries);
-                        else { entries = entries.concat(Array.from(results)); readBatch(); }
-                    }, () => resolve(entries));
-                }
-                readBatch();
-            });
-        }
+        // handleFilesFromInput(), readEntriesRecursively(), readAllDirectoryEntries() -- sidebar.js
 
         function loadFilesWithPaths(fileObjs) {
             let loaded = 0;
@@ -366,15 +271,9 @@
             });
         }
 
-        function cleanQuotes(text) {
-            if (!text) return text;
-            return text
-                .replace(/[’‘´`′＇՚ʻʼʽ‛]/g, "'")
-                .replace(/[“”„‟＂]/g, '"')
-                .replace(/[？⸮]/g, '?')
-                .replace(/[！﹗]/g, '!')
-                .replace(/…/g, '...');
-        }
+        // cleanQuotes(), srtTimeToMs(), sortSubsByTime() -- srt-utils.js
+
+        // Parse subtitles in editor format
 
         // Parse subtitles in editor format (for shared storage compatibility)
         function parseSubtitlesForEditor(data) {
@@ -392,50 +291,7 @@
         }
 
         // ── FILE TREE RENDERING ───────────────────────────────────────────
-        function buildFileTree() {
-            const root = { name: '', fullPath: '', type: 'folder', children: {} };
-            Object.keys(fileStore).forEach(key => {
-                const entry = fileStore[key];
-                const parts = key.split('/');
-                let current = root;
-                for (let i = 0; i < parts.length; i++) {
-                    const part = parts[i];
-                    const isFile = (i === parts.length - 1);
-                    const currentPath = current.fullPath ? current.fullPath + '/' + part : part;
-
-                    if (isFile) {
-                        current.children[part] = {
-                            name: part,
-                            fullPath: key,
-                            type: 'file',
-                            key: key,
-                            subtitlesCount: entry.subtitles ? entry.subtitles.length : 0
-                        };
-                    } else {
-                        if (!current.children[part]) {
-                            current.children[part] = { name: part, fullPath: currentPath, type: 'folder', children: {} };
-                        }
-                        current = current.children[part];
-                    }
-                }
-            });
-            return root;
-        }
-
-        function sortTree(node) {
-            if (node.type !== 'folder' || !node.children) return [];
-            const keys = Object.keys(node.children);
-            const list = keys.map(k => {
-                const child = node.children[k];
-                if (child.type === 'folder') child.sortedChildren = sortTree(child);
-                return child;
-            });
-            list.sort((a, b) => {
-                if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
-                return a.name.localeCompare(b.name, 'tr', { numeric: true, sensitivity: 'base' });
-            });
-            return list;
-        }
+        // buildFileTree(), sortTree() -- sidebar.js
 
         function renderFileList() {
             const list = document.getElementById('file-list');
@@ -641,21 +497,8 @@
             }
         }
 
-        // ── PARSER ────────────────────────────────────────────────────────
-        // Converts an SRT timecode string "HH:MM:SS,mmm --> ..." to milliseconds
-        function srtTimeToMs(timeStr) {
-            const start = (timeStr || '').split('-->')[0].trim();
-            const m = start.match(/^(\d+):(\d+):(\d+)[,.](\d+)/);
-            if (!m) return 0;
-            return (+m[1]) * 3600000 + (+m[2]) * 60000 + (+m[3]) * 1000 + (+m[4]);
-        }
-
-        // Sorts a subtitles array in-place by start timecode and re-indexes entries
-        function sortSubsByTime(subs) {
-            subs.sort(function (a, b) { return srtTimeToMs(a.startMs !== undefined ? a.rawTime : a.time) - srtTimeToMs(b.startMs !== undefined ? b.rawTime : b.time); });
-            subs.forEach(function (s, i) { s.index = i + 1; });
-            return subs;
-        }
+        // ── PARSER ────────────────────────────────────────────────────────────────
+        // srtTimeToMs(), sortSubsByTime() --> srt-utils.js
 
         function parseSRT(data) {
             const cleanedData = cleanQuotes(data);
@@ -945,6 +788,7 @@
         }
 
         window.addEventListener('DOMContentLoaded', loadState);
+        window.addEventListener('DOMContentLoaded', initSidebarResizer);
 
         window.addEventListener('storage_sync', async function (e) {
             if (e.detail.key === 'fileStore') {
