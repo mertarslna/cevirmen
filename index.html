@@ -11,261 +11,6 @@
     <script src="srt-utils.js"></script>
     <script src="sidebar.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <style>
-        /* Polyfill for missing Tailwind classes used by the dictionary modal */
-        #dictionary-modal.fixed {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-        }
-
-        .z-\[100\] {
-            z-index: 100;
-        }
-
-        /* Bulk delete confirmation modals — must sit above everything */
-        #bulk-confirm-1,
-        #bulk-confirm-2 {
-            position: fixed !important;
-            inset: 0 !important;
-            z-index: 9999 !important;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-        }
-
-        #bulk-confirm-1.hidden,
-        #bulk-confirm-2.hidden {
-            display: none !important;
-        }
-
-        /* Bulk delete button — site-consistent slate/rose ghost style */
-        #dict-bulk-delete-btn {
-            align-items: center;
-            gap: 0.375rem;
-            font-size: 0.75rem;
-            font-weight: 500;
-            color: #f87171;
-            border: 1px solid rgba(248, 113, 113, 0.25);
-            background: rgba(248, 113, 113, 0.07);
-            padding: 0.375rem 0.625rem;
-            border-radius: 0.5rem;
-            transition: all 0.15s ease;
-            cursor: pointer;
-        }
-
-        #dict-bulk-delete-btn:hover {
-            color: #fca5a5;
-            border-color: rgba(248, 113, 113, 0.45);
-            background: rgba(248, 113, 113, 0.14);
-        }
-
-        .bg-black\/60 {
-            background-color: rgba(0, 0, 0, 0.6);
-        }
-
-        .backdrop-blur-sm {
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-        }
-
-        .w-\[400px\] {
-            width: 400px;
-            max-width: 90vw;
-        }
-
-        .scale-95 {
-            transform: scale(0.95);
-        }
-
-        .scale-100 {
-            transform: scale(1);
-        }
-
-        .opacity-0 {
-            opacity: 0;
-        }
-
-        .opacity-100 {
-            opacity: 1;
-        }
-
-        .transition-all {
-            transition: all 0.2s ease-in-out;
-        }
-
-        .h-48 {
-            height: 12rem;
-            max-height: 50vh;
-        }
-
-        .overflow-y-auto {
-            overflow-y: auto;
-        }
-
-        .space-y-1> :not([hidden])~ :not([hidden]) {
-            --tw-space-y-reverse: 0;
-            margin-top: calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));
-            margin-bottom: calc(0.25rem * var(--tw-space-y-reverse));
-        }
-
-        /* ── Download Modal Tabs ─────────────────────────────────────── */
-        .dl-tab {
-            flex: 1;
-            padding: 0.625rem 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 500;
-            color: #64748b;
-            background: none;
-            border: none;
-            border-bottom: 2px solid transparent;
-            cursor: pointer;
-            transition: color 0.15s, border-color 0.15s;
-            white-space: nowrap;
-        }
-
-        .dl-tab:hover {
-            color: #cbd5e1;
-        }
-
-        .dl-tab-active {
-            color: #818cf8;
-            border-bottom-color: #6366f1;
-        }
-
-        .dl-folder-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.4rem 0.5rem;
-            border-radius: 0.375rem;
-            background: rgba(99, 102, 241, 0.07);
-            margin-top: 0.25rem;
-            cursor: default;
-        }
-
-        .dl-file-indent {
-            padding-left: 1.75rem;
-        }
-
-        .dl-file-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.375rem 0.5rem;
-            border-radius: 0.375rem;
-            cursor: pointer;
-            transition: background 0.12s;
-        }
-
-        .dl-file-item:hover {
-            background: rgba(99, 102, 241, 0.08);
-        }
-
-        .dl-file-check {
-            accent-color: #6366f1;
-            width: 0.875rem;
-            height: 0.875rem;
-            flex-shrink: 0;
-        }
-
-        .dl-file-name {
-            font-size: 0.8rem;
-            color: #cbd5e1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* ── Subtitle Card Redesign ─────────────────────────────────── */
-
-        .sub-fieldset {
-            position: relative;
-            border: 1px solid #334155;
-            border-radius: 0.5rem;
-            padding: 0;
-            transition: border-color 0.2s ease;
-            background: transparent;
-        }
-
-        .sub-fieldset:focus-within {
-            border-color: #6366f1;
-        }
-
-        .sub-fieldset-label {
-            position: absolute;
-            top: -0.52rem;
-            left: 0.75rem;
-            background: #1e293b;
-            padding: 0 0.3rem;
-            font-size: 0.6rem;
-            font-weight: 600;
-            color: #64748b;
-            letter-spacing: 0.07em;
-            text-transform: uppercase;
-            pointer-events: none;
-            user-select: none;
-        }
-
-        .sub-fieldset-input {
-            width: 100%;
-            background: transparent;
-            border: none;
-            outline: none;
-            color: #a5b4fc;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
-            font-weight: 500;
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.5rem;
-        }
-
-        .sub-fieldset-textarea {
-            width: 100%;
-            background: transparent;
-            border: none;
-            outline: none;
-            color: #f1f5f9;
-            font-size: 1.15rem;
-            line-height: 1.65;
-            resize: none;
-            min-height: 1.8rem;
-            padding: 0.7rem 0.75rem 0.5rem 0.75rem;
-            border-radius: 0.5rem;
-        }
-
-        .sub-action-btn {
-            padding: 0.45rem;
-            border-radius: 0.5rem;
-            border: 1px solid transparent;
-            transition: all 0.15s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            background: transparent;
-        }
-
-        /* Boş trans-status span'ı gizle */
-        span[id^="trans-status"]:empty {
-            display: none;
-        }
-
-        .grammar-warning,
-        .grammar-warning ul {
-            font-size: 13px !important;
-        }
-
-        #file-sidebar,
-        #file-sidebar .text-xs {
-            font-size: 13px !important;
-        }
-    </style>
 </head>
 
 <body class="bg-slate-900 text-slate-100 h-screen overflow-hidden flex flex-col font-sans">
@@ -453,9 +198,8 @@
                 const resizer = document.getElementById('sidebar-resizer');
                 if (sb && resizer) {
                     if (!isOpen) {
-                        sb.style.width = '0';
-                        sb.style.opacity = '0';
-                        resizer.style.display = 'none';
+                        sb.classList.add('sidebar-collapsed');
+                        resizer.classList.add('hidden');
                     } else {
                         sb.style.width = savedWidth;
                     }
@@ -688,7 +432,7 @@
             const subs = [];
 
             function isTimecode(line) {
-                return /\d{1,2}:\d{2}:\d{2}[,\.]\d{1,3}\s*-->\s*\d{1,2}:\d{2}:\d{2}[,\.]\d{1,3}/.test(line.trim());
+                return /\d{1,2}:\d{2}:\d{2}[.,]\d{1,3}\s*-->\s*\d{1,2}:\d{2}:\d{2}[.,]\d{1,3}/.test(line.trim());
             }
             function isIndex(line) {
                 return /^\s*\d+\s*$/.test(line);
@@ -1462,7 +1206,7 @@
             var subs = getActiveSubtitles();
             var newTime = "00:00:00,000 --> 00:00:02,000";
             if (subs.length > 0) {
-                var parts = subs[subs.length - 1].time.split('-->');
+                var parts = (subs[subs.length - 1].time || "").split('-->');
                 if (parts.length === 2) newTime = parts[1].trim() + ' --> 00:00:00,000';
             }
             subs.push({ index: subs.length + 1, time: newTime, text: '', suggestion: '' });
@@ -1481,12 +1225,12 @@
             var subs = getActiveSubtitles();
             var newTime = "00:00:00,000 --> 00:00:02,000";
             if (subs[index]) {
-                var parts = subs[index].time.split('-->');
+                var parts = (subs[index].time || "").split('-->');
                 if (parts.length === 2) {
                     var startTime = parts[1].trim();
                     var endTime = "00:00:00,000";
                     if (index + 1 < subs.length) {
-                        var nextParts = subs[index + 1].time.split('-->');
+                        var nextParts = (subs[index + 1].time || "").split('-->');
                         if (nextParts.length > 0) endTime = nextParts[0].trim();
                     }
                     newTime = startTime + ' --> ' + endTime;
@@ -1687,10 +1431,10 @@
                     headerDiv.className = 'dl-folder-header';
                     headerDiv.setAttribute('data-folder', folder);
                     headerDiv.innerHTML =
-                        '<input type="checkbox" class="dl-folder-check dl-file-check" data-folder="' + folder + '" checked style="accent-color:#6366f1;width:0.875rem;height:0.875rem;flex-shrink:0;">' +
-                        '<svg style="width:0.875rem;height:0.875rem;color:#818cf8;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>' +
-                        '<span style="font-size:0.775rem;font-weight:600;color:#a5b4fc;">' + folderLabel + '</span>' +
-                        '<span style="margin-left:auto;font-size:0.7rem;color:#475569;">' + keys.length + ' dosya</span>';
+                        '<input type="checkbox" class="dl-folder-check dl-file-check" data-folder="' + folder + '" checked>' +
+                        '<svg class="dl-folder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>' +
+                        '<span class="dl-folder-label">' + folderLabel + '</span>' +
+                        '<span class="dl-folder-count">' + keys.length + ' dosya</span>';
                     // Folder checkbox toggles all children
                     headerDiv.querySelector('.dl-folder-check').addEventListener('change', function (e) {
                         var checked = e.target.checked;
@@ -1728,11 +1472,10 @@
 
             const modal = document.getElementById('download-modal');
             const content = document.getElementById('download-modal-content');
-            modal.style.display = 'flex';
+            modal.classList.add('active');
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () {
-                    content.style.transform = 'scale(1)';
-                    content.style.opacity = '1';
+                    if (content) content.classList.add('show');
                 });
             });
         }
@@ -1740,15 +1483,16 @@
         function closeDownloadModal() {
             const modal = document.getElementById('download-modal');
             const content = document.getElementById('download-modal-content');
-            content.style.transform = 'scale(0.95)';
-            content.style.opacity = '0';
-            setTimeout(function () { modal.style.display = 'none'; }, 200);
+            if (content) content.classList.remove('show');
+            setTimeout(function () { modal.classList.remove('active'); }, 200);
         }
 
         function switchDlTab(tab) {
             ['select', 'bulk'].forEach(function (t) {
                 document.getElementById('dl-tab-' + t).classList.toggle('dl-tab-active', t === tab);
-                document.getElementById('dl-panel-' + t).style.display = (t === tab) ? 'flex' : 'none';
+                var panel = document.getElementById('dl-panel-' + t);
+                if (t === tab) panel.classList.add('active');
+                else panel.classList.remove('active');
             });
 
             // Bulk tab: show file count
@@ -1808,7 +1552,7 @@
             } catch (e) {
                 alert('ZIP oluşturulurken hata: ' + e.message);
             } finally {
-                if (btn) { btn.disabled = false; btn.innerHTML = '<svg style="width:0.875rem;height:0.875rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Seçilenleri İndir'; }
+                if (btn) { btn.disabled = false; btn.innerHTML = '<svg class="dl-file-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Seçilenleri İndir'; }
             }
         }
 
@@ -1858,7 +1602,7 @@
             } catch (e) {
                 alert('ZIP oluşturulurken hata: ' + e.message);
             } finally {
-                if (btn) { btn.disabled = false; btn.innerHTML = '<svg style="width:0.875rem;height:0.875rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Tümünü İndir'; }
+                if (btn) { btn.disabled = false; btn.innerHTML = '<svg class="dl-file-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Tümünü İndir'; }
             }
         }
 
@@ -1919,7 +1663,10 @@
             list.innerHTML = '';
             // Show/hide bulk delete button based on word count
             const bulkBtn = document.getElementById('dict-bulk-delete-btn');
-            if (bulkBtn) bulkBtn.style.display = customDictionary.length === 0 ? 'none' : 'flex';
+            if (bulkBtn) {
+                if (customDictionary.length === 0) bulkBtn.classList.add('hidden');
+                else bulkBtn.classList.remove('hidden');
+            }
             if (customDictionary.length === 0) {
                 list.innerHTML = '<p class="text-xs text-slate-500 text-center mt-6">Henüz kelime eklenmemiş.</p>';
                 return;
@@ -1960,12 +1707,10 @@
             const overlay = document.getElementById(id);
             const content = document.getElementById(id + '-content');
             overlay.classList.remove('hidden');
-            content.style.opacity = '0';
-            content.style.transform = 'scale(0.95)';
+            overlay.classList.add('active');
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    content.style.opacity = '1';
-                    content.style.transform = 'scale(1)';
+                    if (content) content.classList.add('show');
                 });
             });
         }
@@ -1973,9 +1718,9 @@
         function hideBulkOverlay(id, callback) {
             const overlay = document.getElementById(id);
             const content = document.getElementById(id + '-content');
-            content.style.opacity = '0';
-            content.style.transform = 'scale(0.95)';
+            if (content) content.classList.remove('show');
             setTimeout(() => {
+                overlay.classList.remove('active');
                 overlay.classList.add('hidden');
                 if (callback) callback();
             }, 200);
@@ -2068,63 +1813,48 @@
     </div>
 
     <!-- ── DOWNLOAD MODAL ───────────────────────────────────────────────── -->
-    <div id="download-modal"
-        style="display:none; position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); align-items:center; justify-content:center;"
+    <div id="download-modal" class="modal-overlay"
         onclick="if(event.target===this) closeDownloadModal()">
-        <div id="download-modal-content"
-            style="background:#1e293b; border:1px solid #334155; border-radius:0.75rem; box-shadow:0 25px 60px rgba(0,0,0,0.7); width:420px; max-width:92vw; overflow:hidden; transform:scale(0.95); opacity:0; transition:all 0.2s ease;">
+        <div id="download-modal-content" class="modal-card">
             <!-- Header -->
-            <div
-                style="padding:1rem 1.25rem; border-bottom:1px solid #334155; display:flex; align-items:center; justify-content:space-between; background:rgba(99,102,241,0.06);">
-                <h3
-                    style="font-size:0.8125rem; font-weight:600; color:#cbd5e1; display:flex; align-items:center; gap:0.5rem;">
-                    <svg style="width:1rem;height:1rem;color:#818cf8;flex-shrink:0" fill="none" stroke="currentColor"
+            <div class="modal-header bg-indigo">
+                <h3 class="modal-title">
+                    <svg class="modal-title-icon" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
                     Dosyaları İndir
                 </h3>
-                <button onclick="closeDownloadModal()"
-                    style="color:#64748b; background:none; border:none; cursor:pointer; padding:0.25rem; border-radius:0.375rem; display:flex; align-items:center; transition:color 0.15s;"
-                    onmouseover="this.style.color='#f1f5f9'" onmouseout="this.style.color='#64748b'">
-                    <svg style="width:1.125rem;height:1.125rem" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button onclick="closeDownloadModal()" class="modal-close-btn">
+                    <svg class="modal-close-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
             <!-- Tabs -->
-            <div style="display:flex; gap:0; border-bottom:1px solid #334155; background:#172032;">
+            <div class="modal-tabs">
                 <button id="dl-tab-select" onclick="switchDlTab('select')" class="dl-tab dl-tab-active">Seçerek
                     İndir</button>
                 <button id="dl-tab-bulk" onclick="switchDlTab('bulk')" class="dl-tab">Toplu İndir</button>
             </div>
             <!-- Panel: Select -->
-            <div id="dl-panel-select" class="hidden"
-                style="padding:1.25rem; display:none; flex-direction:column; gap:1rem;">
-                <div style="display:flex; align-items:center; justify-content:space-between;">
-                    <p style="font-size:0.8125rem; color:#94a3b8;">İndirmek istediğiniz dosyaları seçin.</p>
-                    <div style="display:flex; gap:0.5rem;">
-                        <button onclick="dlToggleAll(true)"
-                            style="font-size:0.7rem; color:#818cf8; background:none; border:none; cursor:pointer; padding:0.125rem 0; transition:color 0.15s;"
-                            onmouseover="this.style.color='#a5b4fc'" onmouseout="this.style.color='#818cf8'">Tümünü
+            <div id="dl-panel-select" class="modal-body">
+                <div class="modal-toolbar">
+                    <p class="modal-desc">İndirmek istediğiniz dosyaları seçin.</p>
+                    <div class="flex gap-2">
+                        <button onclick="dlToggleAll(true)" class="modal-action-link">Tümünü
                             Seç</button>
-                        <span style="color:#334155; font-size:0.7rem;">|</span>
-                        <button onclick="dlToggleAll(false)"
-                            style="font-size:0.7rem; color:#64748b; background:none; border:none; cursor:pointer; padding:0.125rem 0; transition:color 0.15s;"
-                            onmouseover="this.style.color='#94a3b8'"
-                            onmouseout="this.style.color='#64748b'">Temizle</button>
+                        <span class="modal-separator">|</span>
+                        <button onclick="dlToggleAll(false)" class="modal-action-link gray">Temizle</button>
                     </div>
                 </div>
-                <div id="dl-file-list"
-                    style="background:#0f172a; border:1px solid #1e3a5f; border-radius:0.5rem; max-height:200px; overflow-y:auto; padding:0.5rem; display:flex; flex-direction:column; gap:0.25rem;">
+                <div id="dl-file-list" class="modal-list-box">
                 </div>
-                <div style="display:flex; justify-content:flex-end;">
-                    <button onclick="downloadSelectedFiles()"
-                        style="display:flex; align-items:center; gap:0.5rem; background:#4f46e5; color:white; border:none; padding:0.5rem 1.25rem; border-radius:0.5rem; font-size:0.8125rem; font-weight:600; cursor:pointer; transition:background 0.15s;"
-                        onmouseover="this.style.background='#6366f1'" onmouseout="this.style.background='#4f46e5'">
-                        <svg style="width:0.875rem;height:0.875rem" fill="none" stroke="currentColor"
+                <div class="modal-footer">
+                    <button onclick="downloadSelectedFiles()" class="modal-btn-primary">
+                        <svg class="modal-btn-icon" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -2134,24 +1864,20 @@
                 </div>
             </div>
             <!-- Panel: Bulk -->
-            <div id="dl-panel-bulk" class="hidden"
-                style="padding:1.25rem; display:none; flex-direction:column; gap:1rem;">
-                <p style="font-size:0.8125rem; color:#94a3b8; line-height:1.6;">Yüklü tüm dosyalar, klasör yapısı
-                    korunarak tek bir <strong style="color:#a5b4fc;">.zip</strong> arşivi olarak indirilir.</p>
-                <div
-                    style="background:#0f172a; border:1px solid #1e3a5f; border-radius:0.5rem; padding:0.75rem 1rem; display:flex; align-items:center; gap:0.625rem;">
-                    <svg style="width:1rem;height:1rem;color:#6366f1;flex-shrink:0" fill="none" stroke="currentColor"
+            <div id="dl-panel-bulk" class="modal-body">
+                <p class="modal-desc-margin">Yüklü tüm dosyalar, klasör yapısı
+                    korunarak tek bir <strong class="text-indigo-300">.zip</strong> arşivi olarak indirilir.</p>
+                <div class="modal-info-box">
+                    <svg class="modal-info-icon" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span id="dl-bulk-count" style="font-size:0.8125rem; color:#cbd5e1;">0 dosya indirilecek</span>
+                    <span id="dl-bulk-count" class="modal-info-text">0 dosya indirilecek</span>
                 </div>
-                <div style="display:flex; justify-content:flex-end;">
-                    <button onclick="downloadAllFiles()"
-                        style="display:flex; align-items:center; gap:0.5rem; background:#4f46e5; color:white; border:none; padding:0.5rem 1.25rem; border-radius:0.5rem; font-size:0.8125rem; font-weight:600; cursor:pointer; transition:background 0.15s;"
-                        onmouseover="this.style.background='#6366f1'" onmouseout="this.style.background='#4f46e5'">
-                        <svg style="width:0.875rem;height:0.875rem" fill="none" stroke="currentColor"
+                <div class="modal-footer">
+                    <button onclick="downloadAllFiles()" class="modal-btn-primary">
+                        <svg class="modal-btn-icon" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -2164,35 +1890,28 @@
     </div>
 
     <!-- Bulk Delete - First Confirmation -->
-    <div id="bulk-confirm-1" class="hidden">
-        <div id="bulk-confirm-1-content"
-            style="background:#1e293b; border:1px solid #334155; border-radius:0.75rem; box-shadow:0 25px 50px rgba(0,0,0,0.6); width:380px; max-width:90vw; overflow:hidden; transform:scale(0.95); opacity:0; transition:all 0.2s ease;">
+    <div id="bulk-confirm-1" class="modal-overlay hidden">
+        <div id="bulk-confirm-1-content" class="modal-card">
             <!-- Header -->
-            <div
-                style="padding:1rem 1.25rem; border-bottom:1px solid #334155; display:flex; align-items:center; gap:0.75rem; background:rgba(248,113,113,0.06);">
-                <svg style="width:1.125rem;height:1.125rem;color:#f87171;flex-shrink:0" fill="none" stroke="#f87171"
+            <div class="modal-header bg-red">
+                <svg class="modal-title-icon text-red-400" fill="none" stroke="currentColor"
                     viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                 </svg>
-                <span style="font-size:0.8125rem;font-weight:600;color:#cbd5e1;">Tümünü Sil &mdash; Onay</span>
+                <span class="modal-title">Tümünü Sil &mdash; Onay</span>
             </div>
             <!-- Body -->
-            <div style="padding:1.25rem; display:flex; flex-direction:column; gap:1.25rem;">
-                <p style="font-size:0.875rem; color:#94a3b8; line-height:1.6;">
-                    Sözlükteki <span style="font-weight:700; color:#e2e8f0;" id="bulk-confirm-count">0</span> kelimeyi
+            <div class="modal-body !flex">
+                <p class="modal-desc-margin">
+                    Sözlükteki <span class="font-bold text-slate-200" id="bulk-confirm-count">0</span> kelimeyi
                     kalıcı olarak silmek istiyor musunuz?
                 </p>
-                <div style="display:flex; gap:0.5rem; justify-content:flex-end;">
-                    <button onclick="closeBulkConfirm1()"
-                        style="padding:0.5rem 1rem; font-size:0.8125rem; border-radius:0.5rem; background:#334155; color:#cbd5e1; border:1px solid #475569; cursor:pointer; transition:all 0.15s;"
-                        onmouseover="this.style.background='#3f4f63'" onmouseout="this.style.background='#334155'">
+                <div class="modal-footer gap-2">
+                    <button onclick="closeBulkConfirm1()" class="modal-btn-secondary">
                         Vazgeç
                     </button>
-                    <button onclick="finalBulkDelete()"
-                        style="padding:0.5rem 1rem; font-size:0.8125rem; font-weight:600; border-radius:0.5rem; background:rgba(248,113,113,0.15); color:#fca5a5; border:1px solid rgba(248,113,113,0.35); cursor:pointer; transition:all 0.15s;"
-                        onmouseover="this.style.background='rgba(248,113,113,0.25)'"
-                        onmouseout="this.style.background='rgba(248,113,113,0.15)'">
+                    <button onclick="finalBulkDelete()" class="modal-btn-danger">
                         Evet, Sil
                     </button>
                 </div>

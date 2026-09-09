@@ -37,25 +37,24 @@ function toggleSidebar() {
     const resizer = document.getElementById('sidebar-resizer');
 
     // Sadece toggle animasyonu için geçişi etkinleştir
-    sb.style.transition = 'width 0.3s ease, opacity 0.3s ease';
+    sb.classList.add('sidebar-transition');
 
     sidebarOpen = !sidebarOpen;
     localStorage.setItem('sidebarOpen', sidebarOpen);
 
     if (sidebarOpen) {
+        sb.classList.remove('sidebar-collapsed');
+        resizer.classList.remove('hidden');
         sb.style.width = currentSidebarWidth;
-        sb.style.opacity = '1';
-        resizer.style.display = 'block';
     } else {
         currentSidebarWidth = sb.style.width || '22rem';
-        sb.style.width = '0';
-        sb.style.opacity = '0';
-        resizer.style.display = 'none';
+        sb.classList.add('sidebar-collapsed');
+        resizer.classList.add('hidden');
     }
 
     // Animasyon bittikten sonra geçişi temizle; boyutlandırma anında olsun
     setTimeout(() => {
-        sb.style.transition = '';
+        sb.classList.remove('sidebar-transition');
     }, 300);
 }
 

@@ -98,9 +98,8 @@
                 const resizer = document.getElementById('sidebar-resizer');
                 if (sb && resizer) {
                     if (!isOpen) {
-                        sb.style.width = '0';
-                        sb.style.opacity = '0';
-                        resizer.style.display = 'none';
+                        sb.classList.add('sidebar-collapsed');
+                        resizer.classList.add('hidden');
                     } else {
                         sb.style.width = savedWidth;
                     }

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 
 <head>
@@ -10,339 +10,6 @@
     <script src="storage.js"></script>
     <script src="srt-utils.js"></script>
     <script src="sidebar.js"></script>
-    <style>
-        .file-item-ext {
-            position: relative;
-            transition: all 0.15s ease
-        }
-
-        .file-select-checkbox {
-            width: 14px;
-            height: 14px;
-            accent-color: #6366f1;
-            cursor: pointer;
-            flex-shrink: 0
-        }
-
-        .file-item-ext.selected-for-merge {
-            background: rgba(99, 102, 241, 0.12) !important;
-            border-color: rgba(99, 102, 241, 0.45) !important
-        }
-
-        .file-item-ext.checked-file {
-            background: rgba(56, 189, 248, 0.12) !important;
-            border-color: rgba(56, 189, 248, 0.45) !important;
-        }
-
-        .file-item-ext.selected-for-merge.checked-file {
-            background: linear-gradient(90deg, rgba(99, 102, 241, 0.12) 0%, rgba(56, 189, 248, 0.12) 100%) !important;
-            border-color: rgba(56, 189, 248, 0.45) !important;
-        }
-        .file-item .del-btn, .file-item .check-btn {
-            opacity: 0;
-            transition: opacity 0.15s, color 0.15s;
-        }
-        .file-item:hover .del-btn, .file-item:hover .check-btn {
-            opacity: 1;
-        }
-        .check-btn.checked-active {
-            opacity: 1 !important;
-        }
-        .check-btn:not(.checked-active):hover {
-            color: #34d399 !important;
-        }
-
-        .ext-card {
-            background: rgba(30, 41, 59, 0.6);
-            border: 1px solid #334155;
-            border-radius: 0.875rem;
-            padding: 1.25rem;
-            transition: border-color 0.2s
-        }
-
-        .ext-card:focus-within {
-            border-color: rgba(99, 102, 241, 0.4)
-        }
-
-        .ext-card-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.875rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 1px solid #1e293b
-        }
-
-        .ext-card-title {
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #94a3b8
-        }
-
-        .ext-badge {
-            font-size: 0.65rem;
-            font-weight: 600;
-            padding: 0.2rem 0.5rem;
-            border-radius: 9999px
-        }
-
-        .output-textarea {
-            width: 100%;
-            min-height: 220px;
-            flex: 1;
-            background: #0f172a;
-            border: 1px solid #1e293b;
-            border-radius: 0.5rem;
-            padding: 0.875rem;
-            font-size: 0.8rem;
-            font-family: ui-monospace, monospace;
-            color: #cbd5e1;
-            resize: none;
-            outline: none;
-            line-height: 1.6;
-            transition: border-color 0.2s;
-            overflow-y: auto !important;
-        }
-
-        .output-textarea:focus {
-            border-color: #6366f1
-        }
-
-        .ai-textarea {
-            width: 100%;
-            min-height: 180px;
-            background: #0f172a;
-            border: 1px solid #1e293b;
-            border-radius: 0.5rem;
-            padding: 0.875rem;
-            font-size: 0.875rem;
-            color: #e2e8f0;
-            resize: none;
-            outline: none;
-            line-height: 1.65;
-            transition: border-color 0.2s;
-            overflow-y: auto !important;
-        }
-
-        .ai-textarea:focus {
-            border-color: #8b5cf6;
-            box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.2)
-        }
-
-        .history-item {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid #1e293b;
-            border-radius: 0.75rem;
-            padding: 1rem 1.125rem;
-            transition: border-color 0.2s;
-            animation: fadeInUp 0.3s ease
-        }
-
-        .history-item:hover {
-            border-color: #334155
-        }
-
-        .history-item.approved {
-            border-left: 3px solid #10b981
-        }
-
-        .already-approved-banner {
-            background: rgba(180, 83, 9, 0.15);
-            border: 1px solid rgba(217, 119, 6, 0.4);
-            border-radius: 0.625rem;
-            padding: 0.75rem 1rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 0.625rem;
-            animation: fadeInUp 0.25s ease
-        }
-
-        .format-pill {
-            padding: 0.3rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s;
-            border: 1px solid transparent
-        }
-
-        .format-pill.active {
-            background: #4f46e5;
-            color: #fff;
-            border-color: #4f46e5
-        }
-
-        .format-pill:not(.active) {
-            background: transparent;
-            color: #64748b;
-            border-color: #334155
-        }
-
-        .format-pill:not(.active):hover {
-            color: #94a3b8;
-            border-color: #475569
-        }
-
-        .order-badge {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #6366f1;
-            color: white;
-            font-size: 0.6rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4)
-        }
-
-        #merge-footer {
-            position: sticky;
-            bottom: 0;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid #334155;
-            padding: 0.625rem 0.75rem;
-            z-index: 20
-        }
-
-        .ext-scroll::-webkit-scrollbar {
-            width: 5px
-        }
-
-        .ext-scroll::-webkit-scrollbar-track {
-            background: transparent
-        }
-
-        .ext-scroll::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 99px
-        }
-
-        .ext-scroll::-webkit-scrollbar-thumb:hover {
-            background: #475569
-        }
-
-        .dot-pulse {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #10b981;
-            animation: dotPulse 1.4s ease-in-out infinite
-        }
-
-        @keyframes dotPulse {
-
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1)
-            }
-
-            50% {
-                opacity: 0.5;
-                transform: scale(0.8)
-            }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(6px)
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0)
-            }
-        }
-
-        .section-tab {
-            padding: 0.5rem 1.125rem;
-            font-size: 0.775rem;
-            font-weight: 600;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            transition: all 0.15s;
-            border: none;
-            outline: none
-        }
-
-        .section-tab.active {
-            background: #4f46e5;
-            color: #fff;
-            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35)
-        }
-
-        .section-tab:not(.active) {
-            background: transparent;
-            color: #64748b
-        }
-
-        .section-tab:not(.active):hover {
-            color: #94a3b8;
-            background: rgba(255, 255, 255, 0.04)
-        }
-
-        .copy-flash {
-            animation: copyFlash 0.4s ease
-        }
-
-        @keyframes copyFlash {
-            0% {
-                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5)
-            }
-
-            100% {
-                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0)
-            }
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem 1rem;
-            color: #475569
-        }
-
-        .empty-state svg {
-            margin: 0 auto 1rem;
-            display: block;
-            opacity: 0.35
-        }
-
-        .empty-state p {
-            font-size: 0.875rem
-        }
-
-        .nav-active {
-            background: rgba(99, 102, 241, 0.18) !important;
-            border-color: rgba(99, 102, 241, 0.4) !important;
-            color: #a5b4fc !important
-        }
-
-        .file-item {
-            transition: background 0.12s, border-color 0.12s
-        }
-
-        .file-item.active {
-            background: rgba(99, 102, 241, 0.1);
-            border-color: rgba(99, 102, 241, 0.35)
-        }
-
-        .line-clamp-3 {
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden
-        }
-    </style>
 </head>
 
 <body class="bg-slate-900 text-slate-100 h-screen overflow-hidden flex flex-col font-sans">
@@ -410,7 +77,7 @@
             class="w-1.5 cursor-col-resize hover:bg-indigo-500/50 transition-colors z-10 shrink-0 border-r border-slate-700/50 bg-slate-800">
         </div>
         <script>
-            (function () { var sw = localStorage.getItem('sidebarWidth') || '22rem'; var open = localStorage.getItem('sidebarOpen') !== 'false'; var sb = document.getElementById('file-sidebar'); var r = document.getElementById('sidebar-resizer'); if (sb && r) { if (!open) { sb.style.width = '0'; sb.style.opacity = '0'; r.style.display = 'none'; } else { sb.style.width = sw; } } })();
+            (function () { var sw = localStorage.getItem('sidebarWidth') || '22rem'; var open = localStorage.getItem('sidebarOpen') !== 'false'; var sb = document.getElementById('file-sidebar'); var r = document.getElementById('sidebar-resizer'); if (sb && r) { if (!open) { sb.classList.add('sidebar-collapsed'); r.classList.add('hidden'); } else { sb.style.width = sw; } } })();
         </script>
         <main class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 ext-scroll" id="main-area">
             <section id="tab-merge" class="flex-1 flex flex-col gap-4">
@@ -487,8 +154,7 @@
                                 d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                         <span class="ext-card-title">AI Kontrol Paneli</span>
-                        <span class="ext-badge ml-auto"
-                            style="background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3)">Yapay
+                        <span class="ext-badge ext-badge-violet ml-auto">Yapay
                             Zeka Yaniti</span>
                     </div>
                     <div id="ai-current-merge-info"
@@ -523,8 +189,7 @@
                         </div>
                     </div>
                 </div>
-                <div id="approve-success" class="hidden ext-card"
-                    style="border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.05)">
+                <div id="approve-success" class="hidden ext-card success-card">
                     <div class="flex items-center gap-3">
                         <div class="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
                             <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -549,8 +214,7 @@
                                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span class="ext-card-title">Onaylanan Çeviriler</span>
-                        <span id="history-total" class="ext-badge ml-2"
-                            style="background:rgba(99,102,241,0.15);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3)">0
+                        <span id="history-total" class="ext-badge ext-badge-indigo ml-2">0
                             kayit</span>
                         <button onclick="clearAllHistory()"
                             class="ml-auto text-xs text-red-400/70 hover:text-red-400 transition">Tümünü Sil</button>
