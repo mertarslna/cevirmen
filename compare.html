@@ -430,11 +430,12 @@
         // ── SELECTION LOGIC ───────────────────────────────────────────────
         function getFileContent(key) {
             const file = fileStore[key];
-            if (file.content) return file.content;
-            // Reconstruct from subtitles if content is missing
+            if (!file) return '';
+            // Reconstruct from subtitles if available (as index.html only updates subtitles on edit)
             if (file.subtitles && file.subtitles.length > 0) {
                 return file.subtitles.map((s, i) => `${i + 1}\n${s.time}\n${s.text}`).join('\n\n');
             }
+            if (file.content) return file.content;
             return '';
         }
 
@@ -832,6 +833,14 @@
                 if (newStore) {
                     fileStore = newStore;
                     renderFileList();
+                    
+                    if (origFileKey && fileStore[origFileKey]) {
+                        origBlocks = parseSRT(getFileContent(origFileKey));
+                    }
+                    if (transFileKey && fileStore[transFileKey]) {
+                        transBlocks = parseSRT(getFileContent(transFileKey));
+                    }
+                    
                     checkAndRenderComparison();
                 }
             }
