@@ -220,6 +220,7 @@ function handleFilesFromInput(event) {
         file: f,
         path: f.webkitRelativePath || f.name
     }));
+    fileObjs.sort((a, b) => a.path.localeCompare(b.path, 'tr', { numeric: true, sensitivity: 'base' }));
     loadFilesWithPaths(fileObjs);
     event.target.value = '';
 }

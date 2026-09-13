@@ -256,6 +256,7 @@
         // handleFilesFromInput(), readEntriesRecursively(), readAllDirectoryEntries() -- sidebar.js
 
         function loadFilesWithPaths(fileObjs) {
+            fileObjs.sort((a, b) => a.path.localeCompare(b.path, 'tr', { numeric: true, sensitivity: 'base' }));
             let loaded = 0;
             fileObjs.forEach(({ file, path }) => {
                 const reader = new FileReader();

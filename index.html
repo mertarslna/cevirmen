@@ -336,8 +336,8 @@
                 if (storedActiveFile && fileStore[storedActiveFile]) {
                     switchToFile(storedActiveFile);
                 } else {
-                    const firstKey = Object.keys(fileStore)[0];
-                    if (firstKey) switchToFile(firstKey);
+                    const sortedKeys = Object.keys(fileStore).sort((a, b) => a.localeCompare(b, 'tr', { numeric: true, sensitivity: 'base' }));
+                    if (sortedKeys[0]) switchToFile(sortedKeys[0]);
                 }
             }
         }
@@ -405,8 +405,9 @@
 
         // ── LOAD FILES ───────────────────────────────────────────────────
         function loadFilesWithPaths(fileObjs) {
+            fileObjs.sort((a, b) => a.path.localeCompare(b.path, 'tr', { numeric: true, sensitivity: 'base' }));
             let loaded = 0;
-            let firstAddedKey = null;
+            const newlyAddedKeys = [];
 
             fileObjs.forEach(({ file, path }) => {
                 const reader = new FileReader();
@@ -414,13 +415,18 @@
                     const key = path;
                     if (!fileStore[key]) {
                         fileStore[key] = { path: key, name: file.name, subtitles: parseSRT(e.target.result) };
-                        if (!firstAddedKey) firstAddedKey = key;
+                        newlyAddedKeys.push(key);
                     }
                     loaded++;
                     if (loaded === fileObjs.length) {
                         renderFileList();
-                        if (!activeFile && firstAddedKey) {
-                            switchToFile(firstAddedKey);
+                        newlyAddedKeys.sort((a, b) => a.localeCompare(b, 'tr', { numeric: true, sensitivity: 'base' }));
+                        const firstKeyToOpen = newlyAddedKeys[0];
+                        if (!activeFile && firstKeyToOpen) {
+                            switchToFile(firstKeyToOpen);
+                        } else if (!activeFile) {
+                            const sortedKeys = Object.keys(fileStore).sort((a, b) => a.localeCompare(b, 'tr', { numeric: true, sensitivity: 'base' }));
+                            if (sortedKeys[0]) switchToFile(sortedKeys[0]);
                         } else {
                             triggerAutoSave();
                         }
@@ -681,7 +687,7 @@
             delete fileStore[key];
             if (activeFile === key) {
                 activeFile = null;
-                const remainingKeys = Object.keys(fileStore);
+                const remainingKeys = Object.keys(fileStore).sort((a, b) => a.localeCompare(b, 'tr', { numeric: true, sensitivity: 'base' }));
                 if (remainingKeys.length > 0) {
                     switchToFile(remainingKeys[0]);
                 } else {
@@ -705,7 +711,7 @@
                 if (activeFile === k) activeFile = null;
             });
 
-            const remainingKeys = Object.keys(fileStore);
+            const remainingKeys = Object.keys(fileStore).sort((a, b) => a.localeCompare(b, 'tr', { numeric: true, sensitivity: 'base' }));
             if (!activeFile && remainingKeys.length > 0) {
                 switchToFile(remainingKeys[0]);
             } else if (remainingKeys.length === 0) {

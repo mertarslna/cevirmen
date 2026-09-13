@@ -304,6 +304,7 @@
 
         // handleFilesFromInput() -- sidebar.js
         function loadFilesWithPaths(fos) {
+            fos.sort(function (a, b) { return a.path.localeCompare(b.path, 'tr', { numeric: true, sensitivity: 'base' }); });
             var loaded = 0;
             fos.forEach(function (obj) {
                 var reader = new FileReader();
