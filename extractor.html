@@ -64,7 +64,7 @@
             </div>
             <div class="p-2 border-t border-slate-700 flex justify-between items-center text-xs px-3">
                 <p id="file-count" class="text-slate-500"></p>
-                <div class="flex gap-3">
+                <div class="flex gap-3" id="file-actions">
                     <button onclick="selectAllFiles()" id="select-all-btn"
                         class="text-indigo-400 hover:text-indigo-300 transition font-medium">Tümünü
                         Seç</button>
@@ -392,7 +392,13 @@
         function renderFileList() {
             var list = document.getElementById('file-list'); var ce = document.getElementById('file-count'); list.innerHTML = '';
             var keys = Object.keys(fileStore);
-            if (keys.length === 0) { list.innerHTML = '<p class="text-xs text-slate-500 text-center mt-6 px-2">Henüz dosya yüklenmedi.<br>Yukarıdaki butonları kullanın.</p>'; ce.textContent = ''; return; }
+            if (keys.length === 0) { 
+                list.innerHTML = '<p class="text-xs text-slate-500 text-center mt-6 px-2">Henüz dosya yüklenmedi.<br>Yukarıdaki butonları kullanın.</p>'; 
+                ce.textContent = ''; 
+                document.getElementById('select-all-btn').style.display = 'none';
+                return; 
+            }
+            document.getElementById('select-all-btn').style.display = '';
             ce.textContent = keys.length + ' dosya yüklü';
             var rt = buildFileTree(); var sn = sortTree(rt);
             var con = document.createElement('div'); con.className = 'flex gap-2 items-start';
