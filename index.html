@@ -861,6 +861,13 @@
             if (!text || !text.trim()) return issues;
 
             const lines = text.split(/\r?\n/);
+            
+            // 0. Satır sayısı kontrolü
+            if (lines.length >= 3) {
+                issues.push({
+                    message: `Altyazı bloğu 3 satırdan oluşuyor. Genellikle en fazla 2 satır olması tercih edilir.`
+                });
+            }
 
             // A. Inline checks (her satır için ayrı ayrı)
             lines.forEach(function (line) {
