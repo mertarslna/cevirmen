@@ -208,7 +208,15 @@
         </script>
 
         <!-- Main content -->
-        <main class="flex-1 overflow-y-auto p-6 flex flex-col">
+        <main class="flex-1 overflow-y-auto p-6 flex flex-col relative">
+
+            <!-- Top-Center Scroll to Top Button -->
+            <div class="sticky top-2 w-full flex justify-center items-start" style="z-index: 9999; min-height: 0px; height: 0px; margin: 0; padding: 0; overflow: visible;">
+                <button id="scrollToTopBtn" class="pointer-events-none bg-indigo-600/90 hover:bg-indigo-500 text-white backdrop-blur-md shadow-[0_4px_14px_rgba(79,70,229,0.4)] rounded-full px-5 py-1.5 text-xs font-semibold border border-indigo-500/50 flex items-center gap-1.5 opacity-0 -translate-y-8 transition-all duration-300 focus:outline-none hover:scale-105 flex-shrink-0" title="Sayfa Başına Dön">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7 7 7M12 3v18"/></svg>
+                    Yukarı
+                </button>
+            </div>
 
             <div id="upload-section"
                 class="flex-1 flex flex-col justify-center items-center bg-slate-800/50 border-2 border-dashed border-slate-600 rounded-xl p-12 text-center transition-all duration-300 my-6"
@@ -644,6 +652,7 @@
             renderSubtitles(entry.subtitles);
 
             if (targetIndex !== undefined && targetIndex >= 0) {
+                window.isSwitchingFile = true;
                 setTimeout(() => {
                     const cards = document.getElementById('subtitles-container').children;
                     if (cards.length > 0) {
@@ -653,6 +662,7 @@
                             targetCard.scrollIntoView({ behavior: 'instant', block: 'start' });
                         }
                     }
+                    setTimeout(() => { window.isSwitchingFile = false; }, 50);
                 }, 50);
             }
 
@@ -1957,6 +1967,57 @@
         </div>
     </div>
 
+    <!-- Scroll to Top Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mainEl = document.querySelector('main');
+            const scrollBtn = document.getElementById('scrollToTopBtn');
+            let lastScrollTop = 0;
+            let scrollUpStart = null;
+            
+            if (mainEl && scrollBtn) {
+                mainEl.addEventListener('scroll', function() {
+                    const st = mainEl.scrollTop;
+                    
+                    if (window.isSwitchingFile) {
+                        lastScrollTop = st <= 0 ? 0 : st;
+                        scrollUpStart = null;
+                        return;
+                    }
+                    
+                    if (st > lastScrollTop) {
+                        // Aşağı kaydırılıyor
+                        scrollUpStart = null;
+                        scrollBtn.classList.add('opacity-0', '-translate-y-8', 'pointer-events-none');
+                        scrollBtn.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+                    } else if (st < lastScrollTop) {
+                        // Yukarı kaydırılıyor
+                        if (scrollUpStart === null) {
+                            scrollUpStart = lastScrollTop;
+                        }
+                        
+                        // En az 150px yukarı kaydırıldıysa ve sayfanın başından yeterince uzaktaysa göster
+                        if ((scrollUpStart - st) > 150 && st > 300) {
+                            scrollBtn.classList.remove('opacity-0', '-translate-y-8', 'pointer-events-none');
+                            scrollBtn.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+                        }
+                    }
+                    
+                    // En tepeye gelindiğinde gizle
+                    if (st <= 300) {
+                        scrollBtn.classList.add('opacity-0', '-translate-y-8', 'pointer-events-none');
+                        scrollBtn.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+                    }
+                    
+                    lastScrollTop = st <= 0 ? 0 : st;
+                }, { passive: true });
+
+                scrollBtn.addEventListener('click', function() {
+                    mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>
