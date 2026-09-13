@@ -603,8 +603,38 @@
         }
 
         // ── SWITCH FILE ───────────────────────────────────────────────────
+        function getVisibleSubtitleIndex() {
+            const activeEl = document.activeElement;
+            if (activeEl && activeEl.closest) {
+                const card = activeEl.closest('[id^="sub-card-"]');
+                if (card) {
+                    return parseInt(card.id.replace('sub-card-', ''), 10);
+                }
+            }
+            
+            const container = document.getElementById('subtitles-container');
+            const mainEl = document.querySelector('main');
+            if (!container || !mainEl) return 0;
+            
+            const cards = container.children;
+            const mainRect = mainEl.getBoundingClientRect();
+            for (let i = 0; i < cards.length; i++) {
+                const rect = cards[i].getBoundingClientRect();
+                if (rect.bottom > mainRect.top + 20) { 
+                    return parseInt(cards[i].id.replace('sub-card-', ''), 10) || 0;
+                }
+            }
+            return 0;
+        }
+
         function switchToFile(key) {
             if (!fileStore[key]) return;
+            
+            let targetIndex = 0;
+            if (activeFile && activeFile !== key) {
+                targetIndex = getVisibleSubtitleIndex();
+            }
+
             activeFile = key;
             const entry = fileStore[key];
             document.getElementById('upload-section').classList.add('hidden');
@@ -612,6 +642,20 @@
             document.getElementById('action-buttons').classList.remove('hidden');
             document.getElementById('action-buttons').classList.add('flex');
             renderSubtitles(entry.subtitles);
+
+            if (targetIndex !== undefined && targetIndex >= 0) {
+                setTimeout(() => {
+                    const cards = document.getElementById('subtitles-container').children;
+                    if (cards.length > 0) {
+                        const finalIndex = Math.min(targetIndex, cards.length - 1);
+                        const targetCard = cards[finalIndex];
+                        if (targetCard) {
+                            targetCard.scrollIntoView({ behavior: 'instant', block: 'start' });
+                        }
+                    }
+                }, 50);
+            }
+
             renderFileList();
             const filenameInput = document.getElementById('export-filename');
             if (filenameInput) {

@@ -151,6 +151,7 @@ function sortTree(node) {
     });
     list.sort((a, b) => {
         if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+        if (a.type === 'folder') return 0; // Klasörlerde orijinal (yükleme) sırasını koru
         return a.name.localeCompare(b.name, 'tr', { numeric: true, sensitivity: 'base' });
     });
     return list;
