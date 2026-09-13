@@ -402,8 +402,8 @@
             con.appendChild(c1); con.appendChild(c2);
             sn.forEach(function (node, idx) { var w = document.createElement('div'); w.className = 'flex flex-col space-y-1'; renderNode(node, w, 0); (idx % 2 === 0 ? c1 : c2).appendChild(w); });
             list.appendChild(con);
-            var allK = Object.keys(fileStore); var allS = allK.length > 0 && allK.every(function (k) { return selectedFiles.has(k); });
-            document.getElementById('select-all-btn').textContent = allS ? 'Secimi Kaldir' : 'Tumunu Sec';
+            var hasSelection = selectedFiles.size > 0;
+            document.getElementById('select-all-btn').textContent = hasSelection ? 'Seçimi Kaldır' : 'Tümünü Seç';
         }
         function renderNode(node, par, depth) {
             var ip = depth > 0 ? (depth * 10 + 4) : 4;
@@ -450,9 +450,19 @@
             saveState();
         }
         function selectAllFiles() {
-            var ak = Object.keys(fileStore); var as = ak.length > 0 && ak.every(function (k) { return selectedFiles.has(k); });
-            if (as) { selectedFiles.clear(); mergeOrder = []; }
-            else { ak.forEach(function (k) { if (!selectedFiles.has(k)) { selectedFiles.add(k); mergeOrder.push(k); } }); }
+            var ak = Object.keys(fileStore); 
+            var hasSelection = selectedFiles.size > 0;
+            if (hasSelection) { 
+                selectedFiles.clear(); 
+                mergeOrder = []; 
+            } else { 
+                ak.forEach(function (k) { 
+                    if (!selectedFiles.has(k)) { 
+                        selectedFiles.add(k); 
+                        mergeOrder.push(k); 
+                    } 
+                }); 
+            }
             renderFileList();
             if (selectedFiles.size > 0) { mergeSelected(); } else { clearMergedOutput(); }
             saveState();
