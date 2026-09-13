@@ -35,13 +35,21 @@
             </a>
         </div>
         <div id="stats-summary" class="hidden flex items-center gap-3 text-xs">
-            <span class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300">Orijinal: <strong
+            <span class="flex items-center gap-2 px-4 h-10 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 text-sm font-medium shadow-md">Orijinal: <strong
                     id="orig-count" class="text-indigo-400">0</strong></span>
-            <span class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300">Çeviri: <strong
+            <span class="flex items-center gap-2 px-4 h-10 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 text-sm font-medium shadow-md">Çeviri: <strong
                     id="trans-count" class="text-indigo-400">0</strong></span>
-            <span id="issue-badge-summary"
-                class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300">Sorunlu Blok: <strong
-                    id="issue-count" class="text-emerald-400">0</strong></span>
+            <div id="issue-navigator" class="flex items-stretch h-10 border border-slate-700 rounded-lg overflow-hidden bg-slate-900 shadow-md">
+                <div id="issue-nav-main" class="px-3 flex items-center gap-1.5 text-amber-400 border-r border-slate-700 cursor-pointer hover:bg-slate-800 transition select-none" onclick="navigateIssue(1)" title="Sonraki Soruna Git">
+                    <span class="text-sm font-medium whitespace-nowrap">Sorunlu Blok: <strong id="issue-count">0</strong></span>
+                </div>
+                <button onclick="navigateIssue(-1)" class="px-2.5 hover:bg-slate-800 text-slate-300 hover:text-white transition border-r border-slate-700 flex items-center justify-center" title="Önceki Sorun">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                </button>
+                <button onclick="navigateIssue(1)" class="px-2.5 hover:bg-slate-800 text-slate-300 hover:text-white transition flex items-center justify-center" title="Sonraki Sorun">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                </button>
+            </div>
         </div>
     </header>
 
@@ -197,6 +205,8 @@
         let fileStore = {};
         let collapsedFolders = new Set();
         let sidebarOpen = localStorage.getItem('sidebarOpen') !== 'false';
+        let compareState = { originalKey: null, translatedKey: null };
+        let currentIssueIndex = -1;
 
         let origFileKey = null;
         let transFileKey = null;
@@ -577,6 +587,35 @@
             saveState();
         }
 
+        function navigateIssue(direction) {
+            const cards = Array.from(document.querySelectorAll('#comparison-list > div')).filter(card => {
+                return card.classList.contains('border-amber-800/80');
+            });
+            if (cards.length === 0) return;
+
+            if (currentIssueIndex === -1 && direction === -1) {
+                currentIssueIndex = cards.length - 1;
+            } else if (currentIssueIndex === -1 && direction === 1) {
+                currentIssueIndex = 0;
+            } else {
+                currentIssueIndex += direction;
+            }
+
+            if (currentIssueIndex >= cards.length) {
+                currentIssueIndex = 0;
+            } else if (currentIssueIndex < 0) {
+                currentIssueIndex = cards.length - 1;
+            }
+
+            const targetCard = cards[currentIssueIndex];
+            targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            targetCard.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2', 'ring-offset-slate-900');
+            setTimeout(() => {
+                targetCard.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2', 'ring-offset-slate-900');
+            }, 1000);
+        }
+
         function renderComparisonList() {
             const container = document.getElementById('comparison-list');
             container.innerHTML = '';
@@ -666,9 +705,7 @@
             document.getElementById('count-all').textContent = maxLen;
             document.getElementById('count-issues').textContent = issueCount;
             document.getElementById('issue-count').textContent = issueCount;
-
-            if (issueCount > 0) document.getElementById('issue-badge-summary').className = 'bg-amber-950/60 border border-amber-800 px-3 py-1.5 rounded-lg text-amber-200 font-semibold flex items-center gap-1';
-            else document.getElementById('issue-badge-summary').className = 'bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300 flex items-center gap-1';
+            currentIssueIndex = -1; // Reset navigation index
 
             if (totalRendered === 0) container.innerHTML = `<div class="bg-slate-800/40 border border-slate-700 rounded-xl p-8 text-center text-slate-400 text-sm">Gösterilecek altyazı bloğu bulunamadı.</div>`;
         }
