@@ -1,0 +1,21 @@
+{
+  "name": "SRT Altyazı Düzenleyici & Çevirmen",
+  "short_name": "SRT Çevirmen",
+  "description": "SRT altyazı dosyalarını düzenleyin, çevirin ve karşılaştırın.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#1e293b",
+  "lang": "tr",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "srtlogo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["utilities", "productivity"]
+}

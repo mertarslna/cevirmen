@@ -7,9 +7,21 @@
     <title>SRT Kontrol ve Birlestirici</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="srtlogo.png" type="image/png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e293b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SRT Çevirmen">
     <script src="storage.js"></script>
     <script src="srt-utils.js"></script>
     <script src="sidebar.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
+    </script>
 </head>
 
 <body class="bg-slate-900 text-slate-100 h-screen overflow-hidden flex flex-col font-sans">
