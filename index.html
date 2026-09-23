@@ -1908,7 +1908,7 @@
             } else {
                 document.getElementById('batch-search-input').value = '';
                 document.getElementById('batch-replace-input').value = '';
-                document.getElementById('batch-match-case').checked = false;
+                document.getElementById('batch-ignore-case').checked = false;
                 const resultBox = document.getElementById('batch-replace-result');
                 if (resultBox) {
                     resultBox.classList.add('hidden');
@@ -1921,7 +1921,7 @@
         async function executeBatchReplace() {
             const searchInput = document.getElementById('batch-search-input').value;
             const replaceInput = document.getElementById('batch-replace-input').value;
-            const matchCase = document.getElementById('batch-match-case').checked;
+            const ignoreCase = document.getElementById('batch-ignore-case').checked;
             const resultBox = document.getElementById('batch-replace-result');
             
             if (!searchInput) {
@@ -1941,7 +1941,7 @@
 
             // Escape RegExp specials
             const escapedSearch = searchInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regexFlags = matchCase ? 'g' : 'gi';
+            const regexFlags = ignoreCase ? 'gi' : 'g';
             const regex = new RegExp(escapedSearch, regexFlags);
 
             let totalReplacements = 0;
@@ -2056,8 +2056,8 @@
                         placeholder="Örn: armut" onkeydown="if(event.key==='Enter') executeBatchReplace()">
                 </div>
                 <div class="flex items-center gap-2 mt-1">
-                    <input type="checkbox" id="batch-match-case" class="w-3.5 h-3.5 bg-slate-900 border-slate-700 rounded accent-indigo-500 cursor-pointer">
-                    <label for="batch-match-case" class="text-xs text-slate-300 cursor-pointer select-none">Büyük/Küçük harf duyarlı</label>
+                    <input type="checkbox" id="batch-ignore-case" class="w-3.5 h-3.5 bg-slate-900 border-slate-700 rounded accent-indigo-500 cursor-pointer">
+                    <label for="batch-ignore-case" class="text-xs text-slate-300 cursor-pointer select-none">Büyük/Küçük harf duyarsız</label>
                 </div>
                 
                 <div id="batch-replace-result" class="text-xs font-medium mt-2 hidden rounded p-2"></div>
