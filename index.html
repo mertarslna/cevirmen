@@ -498,7 +498,9 @@
                 }
 
                 if (textLines.length > 0) {
-                    subs.push({ index: subs.length + 1, time: timeLine, text: textLines.join('\n'), suggestion: '' });
+                    let originalText = textLines.join('\n');
+                    let optimalText = getOptimalSplitText(originalText);
+                    subs.push({ index: subs.length + 1, time: timeLine, text: optimalText, suggestion: '' });
                 }
             }
 
@@ -778,38 +780,65 @@
         }
 
         function getOptimalSplitText(text) {
+            let lines = text.split('\n').map(l => l.trim()).filter(l => l);
+            let isDialog = false;
+
+            if (lines.length > 1 && lines.every(l => /^[-—–]/.test(l))) {
+                isDialog = true;
+            } else if (lines.length === 1 && /^[-—–]/.test(lines[0])) {
+                let parts = lines[0].split(/\s+[-—–]\s+/);
+                if (parts.length > 1) {
+                    lines = [parts[0]];
+                    for (let i = 1; i < parts.length; i++) {
+                        lines.push('- ' + parts[i]);
+                    }
+                    isDialog = true;
+                }
+            }
+
+            function splitSingleLine(str) {
+                const words = str.split(' ');
+                if (words.length <= 1) return str;
+
+                let bestSplitPoint = Math.floor(words.length / 2);
+                let minScore = Infinity;
+                let bestIsUnderLimit = false;
+
+                for (let i = 1; i < words.length; i++) {
+                    const line1 = words.slice(0, i).join(' ');
+                    const line2 = words.slice(i).join(' ');
+
+                    const isUnderLimit = line1.length <= CHAR_LIMIT && line2.length <= CHAR_LIMIT;
+                    const diff = Math.abs(line1.length - line2.length);
+
+                    const penalty = line1.length > line2.length ? 5 : 0;
+                    const score = diff + penalty;
+
+                    if (isUnderLimit && (!bestIsUnderLimit || score < minScore)) {
+                        minScore = score;
+                        bestSplitPoint = i;
+                        bestIsUnderLimit = true;
+                    } else if (!bestIsUnderLimit && score < minScore) {
+                        minScore = score;
+                        bestSplitPoint = i;
+                    }
+                }
+                return words.slice(0, bestSplitPoint).join(' ') + '\n' + words.slice(bestSplitPoint).join(' ');
+            }
+
+            if (isDialog) {
+                const result = lines.map(line => {
+                    if (line.length <= CHAR_LIMIT) return line;
+                    return splitSingleLine(line);
+                });
+                return result.join('\n');
+            }
+
             const cleanText = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
             if (cleanText.length <= CHAR_LIMIT) {
                 return cleanText;
             }
-            const words = cleanText.split(' ');
-            if (words.length <= 1) return cleanText;
-
-            let bestSplitPoint = Math.floor(words.length / 2);
-            let minScore = Infinity;
-            let bestIsUnderLimit = false;
-
-            for (let i = 1; i < words.length; i++) {
-                const line1 = words.slice(0, i).join(' ');
-                const line2 = words.slice(i).join(' ');
-
-                const isUnderLimit = line1.length <= CHAR_LIMIT && line2.length <= CHAR_LIMIT;
-                const diff = Math.abs(line1.length - line2.length);
-
-                // Üst satırın daha kısa olması tercih edilir (piramit yapısı)
-                const penalty = line1.length > line2.length ? 5 : 0;
-                const score = diff + penalty;
-
-                if (isUnderLimit && (!bestIsUnderLimit || score < minScore)) {
-                    minScore = score;
-                    bestSplitPoint = i;
-                    bestIsUnderLimit = true;
-                } else if (!bestIsUnderLimit && score < minScore) {
-                    minScore = score;
-                    bestSplitPoint = i;
-                }
-            }
-            return words.slice(0, bestSplitPoint).join(' ') + '\n' + words.slice(bestSplitPoint).join(' ');
+            return splitSingleLine(cleanText);
         }
 
         function generateLineStatsHTML(lines, index) {
