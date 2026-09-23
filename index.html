@@ -64,6 +64,7 @@
                 </svg>
                 Sözlük
             </button>
+
             <div id="warning-navigator"
                 class="hidden flex items-stretch h-10 border border-slate-700 rounded-lg overflow-hidden bg-slate-900 shadow-md">
                 <div class="px-3 flex items-center gap-1.5 text-amber-400 border-r border-slate-700 cursor-pointer hover:bg-slate-800 transition select-none"
@@ -379,6 +380,12 @@
             var dictModal = document.getElementById('dictionary-modal');
             if (dictModal && !dictModal.classList.contains('hidden')) {
                 closeDictionaryModal();
+                return;
+            }
+            // Close batch replace modal if open
+            var batchReplaceModal = document.getElementById('batch-replace-modal');
+            if (batchReplaceModal && !batchReplaceModal.classList.contains('hidden')) {
+                closeBatchReplaceModal();
                 return;
             }
         });
@@ -1745,7 +1752,7 @@
             localStorage.setItem('cevirmen_dictionary', JSON.stringify(customDictionary));
         }
 
-        function openDictionaryModal() {
+        function openDictionaryModal(tab = 'dict') {
             loadDictionary();
             renderDictionary();
             const modal = document.getElementById('dictionary-modal');
@@ -1756,7 +1763,8 @@
                 content.classList.remove('scale-95', 'opacity-0');
                 content.classList.add('scale-100', 'opacity-100');
             }, 10);
-            document.getElementById('dict-input').focus();
+            
+            switchToolsTab(tab);
         }
 
         function closeDictionaryModal() {
@@ -1876,32 +1884,118 @@
                 }
             }
         });
+
+        // ── TOOLS TABS LOGIC ──────────────────────────────────────────────────
+        function switchToolsTab(tab) {
+            ['dict', 'batch'].forEach(t => {
+                const btn = document.getElementById('tools-tab-' + t);
+                const panel = document.getElementById('tools-panel-' + t);
+                if (!btn || !panel) return;
+                
+                if (t === tab) {
+                    btn.classList.add('text-indigo-400', 'border-indigo-500');
+                    btn.classList.remove('text-slate-400', 'border-transparent', 'hover:text-slate-300');
+                    panel.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('text-indigo-400', 'border-indigo-500');
+                    btn.classList.add('text-slate-400', 'border-transparent', 'hover:text-slate-300');
+                    panel.classList.add('hidden');
+                }
+            });
+            
+            if (tab === 'dict') {
+                setTimeout(() => document.getElementById('dict-input').focus(), 100);
+            } else {
+                document.getElementById('batch-search-input').value = '';
+                document.getElementById('batch-replace-input').value = '';
+                document.getElementById('batch-match-case').checked = false;
+                const resultBox = document.getElementById('batch-replace-result');
+                if (resultBox) {
+                    resultBox.classList.add('hidden');
+                    resultBox.textContent = '';
+                }
+                setTimeout(() => document.getElementById('batch-search-input').focus(), 100);
+            }
+        }
+
+        async function executeBatchReplace() {
+            const searchInput = document.getElementById('batch-search-input').value;
+            const replaceInput = document.getElementById('batch-replace-input').value;
+            const matchCase = document.getElementById('batch-match-case').checked;
+            const resultBox = document.getElementById('batch-replace-result');
+            
+            if (!searchInput) {
+                resultBox.className = 'text-xs font-medium mt-2 rounded p-2 bg-red-500/20 text-red-400';
+                resultBox.textContent = 'Lütfen aranacak kelimeyi girin.';
+                resultBox.classList.remove('hidden');
+                return;
+            }
+
+            const keys = Object.keys(fileStore);
+            if (keys.length === 0) {
+                resultBox.className = 'text-xs font-medium mt-2 rounded p-2 bg-amber-500/20 text-amber-400';
+                resultBox.textContent = 'Yüklü dosya bulunamadı.';
+                resultBox.classList.remove('hidden');
+                return;
+            }
+
+            // Escape RegExp specials
+            const escapedSearch = searchInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regexFlags = matchCase ? 'g' : 'gi';
+            const regex = new RegExp(escapedSearch, regexFlags);
+
+            let totalReplacements = 0;
+            let affectedFiles = 0;
+
+            keys.forEach(key => {
+                let fileModified = false;
+                const subs = fileStore[key].subtitles;
+                subs.forEach(sub => {
+                    if (sub.text && regex.test(sub.text)) {
+                        const count = (sub.text.match(regex) || []).length;
+                        totalReplacements += count;
+                        sub.text = sub.text.replace(regex, replaceInput);
+                        fileModified = true;
+                    }
+                });
+                if (fileModified) {
+                    affectedFiles++;
+                }
+            });
+
+            if (totalReplacements > 0) {
+                await setStorageItem('fileStore', fileStore);
+                if (activeFile) {
+                    renderEditor();
+                }
+                
+                resultBox.className = 'text-xs font-medium mt-2 rounded p-2 bg-emerald-500/20 text-emerald-400';
+                resultBox.textContent = `${affectedFiles} dosyada toplam ${totalReplacements} değişiklik yapıldı.`;
+            } else {
+                resultBox.className = 'text-xs font-medium mt-2 rounded p-2 bg-amber-500/20 text-amber-400';
+                resultBox.textContent = 'Aranan kelime hiçbir dosyada bulunamadı.';
+            }
+            resultBox.classList.remove('hidden');
+        }
     </script>
 
 
-    <!-- Dictionary Modal -->
-    <div id="dictionary-modal"
-        class="hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center">
+    <!-- Tools Modal (Dictionary & Batch Replace) -->
+    <div id="dictionary-modal" style="z-index: 200;"
+        class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
         <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-[400px] flex flex-col overflow-hidden transform transition-all duration-200 scale-95 opacity-0"
             id="dictionary-modal-content">
+            
+            <!-- Header -->
             <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/80">
                 <h3 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
                     <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
-                    Özel İsimler Sözlüğü
+                    Kelime İşlemleri
                 </h3>
                 <div class="flex items-center gap-2">
-                    <!-- Bulk delete button -->
-                    <button id="dict-bulk-delete-btn" onclick="bulkDeleteAll()" title="Tümünü Sil" style="display:none"
-                        class="flex items-center gap-1.5 text-xs font-medium text-red-400 hover:text-red-300 border border-red-500/40 hover:border-red-400/70 bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1.5 rounded-lg transition-all">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Tümünü Sil
-                    </button>
                     <button onclick="closeDictionaryModal()"
                         class="text-slate-400 hover:text-white transition p-1 rounded-md hover:bg-slate-700">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1911,9 +2005,26 @@
                     </button>
                 </div>
             </div>
-            <div class="p-4 flex flex-col gap-4">
-                <p class="text-xs text-slate-400">Buraya eklediğiniz kelimeler virgülden sonra büyük harfle başlasa dahi
-                    imla uyarısı vermez.</p>
+
+            <!-- Tabs -->
+            <div class="flex border-b border-slate-700 bg-slate-800">
+                <button id="tools-tab-dict" onclick="switchToolsTab('dict')" class="flex-1 py-2 text-xs font-medium text-indigo-400 border-b-2 border-indigo-500 transition-colors">Sözlük</button>
+                <button id="tools-tab-batch" onclick="switchToolsTab('batch')" class="flex-1 py-2 text-xs font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-300 transition-colors">Toplu Değiştir</button>
+            </div>
+
+            <!-- Panel: Dictionary -->
+            <div id="tools-panel-dict" class="p-4 flex flex-col gap-4">
+                <div class="flex justify-between items-center gap-2">
+                    <p class="text-xs text-slate-400 flex-1">Buraya eklediğiniz kelimeler virgülden sonra büyük harfle başlasa dahi imla uyarısı vermez.</p>
+                    <button id="dict-bulk-delete-btn" onclick="bulkDeleteAll()" title="Tümünü Sil" style="display:none"
+                        class="flex items-center gap-1.5 text-[10px] font-medium text-red-400 hover:text-red-300 border border-red-500/40 hover:border-red-400/70 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded transition-all shrink-0">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Tümünü Sil
+                    </button>
+                </div>
                 <div class="flex gap-2">
                     <input type="text" id="dict-input" placeholder="Özel isim girin..."
                         class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
@@ -1925,6 +2036,39 @@
                     id="dict-list">
                     <!-- List items will be generated here -->
                 </div>
+            </div>
+
+            <!-- Panel: Batch Replace -->
+            <div id="tools-panel-batch" class="hidden p-4 flex flex-col gap-3">
+                <p class="text-xs text-slate-400 mb-1">
+                    Bu işlem yüklenmiş olan <b>tüm</b> dosyalardaki hedef kelimeyi yeni kelimeyle değiştirir.
+                </p>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Aranacak Kelime</label>
+                    <input type="text" id="batch-search-input"
+                        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                        placeholder="Örn: elma" onkeydown="if(event.key==='Enter') document.getElementById('batch-replace-input').focus()">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Yeni Kelime</label>
+                    <input type="text" id="batch-replace-input"
+                        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                        placeholder="Örn: armut" onkeydown="if(event.key==='Enter') executeBatchReplace()">
+                </div>
+                <div class="flex items-center gap-2 mt-1">
+                    <input type="checkbox" id="batch-match-case" class="w-3.5 h-3.5 bg-slate-900 border-slate-700 rounded accent-indigo-500 cursor-pointer">
+                    <label for="batch-match-case" class="text-xs text-slate-300 cursor-pointer select-none">Büyük/Küçük harf duyarlı</label>
+                </div>
+                
+                <div id="batch-replace-result" class="text-xs font-medium mt-2 hidden rounded p-2"></div>
+                
+                <button onclick="executeBatchReplace()"
+                    class="mt-2 w-full bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2 rounded-lg transition shadow-md flex justify-center items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Tümünü Değiştir
+                </button>
             </div>
         </div>
     </div>
