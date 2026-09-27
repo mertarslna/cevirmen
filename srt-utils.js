@@ -22,7 +22,10 @@ function cleanQuotes(text) {
         .replace(/[""„‟＂]/g, '"')
         .replace(/[？⸮]/g, '?')
         .replace(/[！﹗]/g, '!')
-        .replace(/…/g, '...');
+        .replace(/…/g, '...')
+        .replace(/,(\s*)(ve(?![a-zA-ZçÇğĞıiİöÖşŞüÜ]))/gi, function(match, space, veWord) {
+            return (space || ' ') + veWord;
+        });
 }
 
 // ── SRT ZAMAN DAMGASI ─────────────────────────────────────────────────────
