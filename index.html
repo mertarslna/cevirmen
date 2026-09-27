@@ -1878,8 +1878,8 @@
                 if (newStore) {
                     fileStore = newStore;
                     renderFileList();
-                    if (currentFileKey && fileStore[currentFileKey]) {
-                        renderEditor(currentFileKey);
+                    if (activeFile && fileStore[activeFile]) {
+                        renderSubtitles(fileStore[activeFile].subtitles);
                     }
                 }
             }
@@ -1909,6 +1909,7 @@
                 document.getElementById('batch-search-input').value = '';
                 document.getElementById('batch-replace-input').value = '';
                 document.getElementById('batch-ignore-case').checked = false;
+                document.getElementById('batch-substring-match').checked = false;
                 const resultBox = document.getElementById('batch-replace-result');
                 if (resultBox) {
                     resultBox.classList.add('hidden');
@@ -1940,8 +1941,15 @@
             }
 
             // Escape RegExp specials
-            const escapedSearch = searchInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regexFlags = ignoreCase ? 'gi' : 'g';
+            let escapedSearch = searchInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const allowSubstring = document.getElementById('batch-substring-match').checked;
+            
+            if (!allowSubstring) {
+                // Varsayılan olarak sadece tam kelime eşleşmesi (Türkçe karakter destekli)
+                escapedSearch = `(?<=^|[^\\p{L}\\p{N}_])${escapedSearch}(?=[^\\p{L}\\p{N}_]|$)`;
+            }
+
+            const regexFlags = ignoreCase ? 'giu' : 'gu';
             const regex = new RegExp(escapedSearch, regexFlags);
 
             let totalReplacements = 0;
@@ -1966,7 +1974,7 @@
             if (totalReplacements > 0) {
                 await setStorageItem('fileStore', fileStore);
                 if (activeFile) {
-                    renderEditor();
+                    renderSubtitles(fileStore[activeFile].subtitles);
                 }
                 
                 resultBox.className = 'text-xs font-medium mt-2 rounded p-2 bg-emerald-500/20 text-emerald-400';
@@ -2058,6 +2066,10 @@
                 <div class="flex items-center gap-2 mt-1">
                     <input type="checkbox" id="batch-ignore-case" class="w-3.5 h-3.5 bg-slate-900 border-slate-700 rounded accent-indigo-500 cursor-pointer">
                     <label for="batch-ignore-case" class="text-xs text-slate-300 cursor-pointer select-none">Büyük/Küçük harf duyarsız</label>
+                </div>
+                <div class="flex items-center gap-2 mt-1">
+                    <input type="checkbox" id="batch-substring-match" class="w-3.5 h-3.5 bg-slate-900 border-slate-700 rounded accent-indigo-500 cursor-pointer">
+                    <label for="batch-substring-match" class="text-xs text-slate-300 cursor-pointer select-none">Kelime parçalarını da dahil et</label>
                 </div>
                 
                 <div id="batch-replace-result" class="text-xs font-medium mt-2 hidden rounded p-2"></div>
