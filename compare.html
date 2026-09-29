@@ -419,15 +419,10 @@
                     '<div class="flex-1 min-w-0 relative flex items-center gap-1.5 h-full">' +
                     '<span class="text-xs truncate w-full ' + nameColor + '" title="' + node.fullPath + '">' + node.name.replace(/\.srt$/i, '') + '</span>' +
                     '<span class="text-xs text-slate-500 shrink-0">' + (node.subtitlesCount !== undefined ? node.subtitlesCount : '') + '</span>' +
-                    '<div class="absolute inset-0 -mx-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 bg-slate-800/80 backdrop-blur-sm z-10">' +
-                    '<button class="bg-indigo-900/80 hover:bg-indigo-600 text-indigo-300 hover:text-white px-2 py-0.5 rounded text-[10px] font-medium border border-indigo-700/50" title="Orijinal (Kaynak) dosya olarak seç" data-action="set-orig">Orijinal</button>' +
-                    '<button class="bg-violet-900/80 hover:bg-violet-600 text-violet-300 hover:text-white px-2 py-0.5 rounded text-[10px] font-medium border border-violet-700/50" title="Çeviri (Hedef) dosya olarak seç" data-action="set-trans">Hedef</button>' +
-                    '</div>' +
                     '</div>' +
                     '<button class="del-btn relative z-20 text-slate-600 hover:text-red-400 shrink-0 p-0.5 ml-0.5 rounded" title="Kaldır" data-action="del"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>';
 
-                fileItem.querySelector('[data-action="set-orig"]').addEventListener('click', (e) => { e.stopPropagation(); setOriginal(node.key); });
-                fileItem.querySelector('[data-action="set-trans"]').addEventListener('click', (e) => { e.stopPropagation(); setTranslated(node.key); });
+                fileItem.addEventListener('click', () => { handleFileSelection(node.key); });
                 fileItem.querySelector('[data-action="del"]').addEventListener('click', (e) => {
                     e.stopPropagation();
                     if (!confirm('"' + node.key + '" dosyasını listeden kaldırmak istediğinize emin misiniz?')) return;
@@ -442,6 +437,45 @@
         }
 
         // ── SELECTION LOGIC ───────────────────────────────────────────────
+        function handleFileSelection(key) {
+            if (key === origFileKey) {
+                origFileKey = null;
+                origBlocks = [];
+                document.getElementById('summary-orig-name').textContent = 'Seçilmedi';
+                comparisonActive = false;
+                document.getElementById('comparison-dashboard').classList.add('hidden');
+                document.getElementById('comparison-dashboard').classList.remove('flex');
+                updateCompareBtn();
+                renderFileList();
+                if (typeof saveCompareState === 'function') saveCompareState();
+                return;
+            }
+            if (key === transFileKey) {
+                transFileKey = null;
+                transBlocks = [];
+                document.getElementById('summary-trans-name').textContent = 'Seçilmedi';
+                comparisonActive = false;
+                document.getElementById('comparison-dashboard').classList.add('hidden');
+                document.getElementById('comparison-dashboard').classList.remove('flex');
+                updateCompareBtn();
+                renderFileList();
+                if (typeof saveState === 'function') saveState();
+                else if (typeof saveCompareState === 'function') saveCompareState();
+                return;
+            }
+
+            if (!origFileKey) {
+                setOriginal(key);
+            } else if (!transFileKey) {
+                setTranslated(key);
+            } else {
+                transFileKey = null;
+                transBlocks = [];
+                document.getElementById('summary-trans-name').textContent = 'Seçilmedi';
+                setOriginal(key);
+            }
+        }
+
         function getFileContent(key) {
             const file = fileStore[key];
             if (!file) return '';
