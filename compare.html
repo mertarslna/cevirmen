@@ -384,7 +384,7 @@
                 });
                 folderItem.querySelector('.del-btn').addEventListener('click', (e) => {
                     e.stopPropagation();
-                    if (confirm('Klasörü kaldırmak istediğinize emin misiniz?')) {
+                    if (confirm('"' + node.fullPath + '" klasörünü ve içindeki tüm dosyaları listeden kaldırmak istediğinize emin misiniz?')) {
                         const prefix = node.fullPath + '/';
                         Object.keys(fileStore).filter(k => k === node.fullPath || k.startsWith(prefix)).forEach(k => delete fileStore[k]);
                         checkSelections();
@@ -430,6 +430,7 @@
                 fileItem.querySelector('[data-action="set-trans"]').addEventListener('click', (e) => { e.stopPropagation(); setTranslated(node.key); });
                 fileItem.querySelector('[data-action="del"]').addEventListener('click', (e) => {
                     e.stopPropagation();
+                    if (!confirm('"' + node.key + '" dosyasını listeden kaldırmak istediğinize emin misiniz?')) return;
                     delete fileStore[node.key];
                     checkSelections();
                     renderFileList();
