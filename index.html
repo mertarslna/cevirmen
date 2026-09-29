@@ -30,7 +30,7 @@
     <!-- Header -->
     <header
         class="sticky top-0 z-50 bg-slate-800/90 backdrop-blur-md border-b border-slate-700 py-3 px-5 shadow-lg flex flex-wrap justify-between items-center gap-3">
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
             <button id="sidebar-toggle" onclick="toggleSidebar()" title="Dosya panelini aç/kapat"
                 class="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-slate-700 transition text-slate-400 hover:text-slate-200">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,7 +38,7 @@
                 </svg>
             </button>
             <a href="compare.html"
-                class="flex items-center gap-2 px-4 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition-all text-slate-300 hover:text-white text-sm font-medium shadow-md ml-2"
+                class="flex items-center gap-2 px-4 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition-all text-slate-300 hover:text-white text-sm font-medium shadow-md ml-2 whitespace-nowrap flex-shrink-0"
                 title="Altyazı Karşılaştırma Sayfası">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -47,7 +47,7 @@
                 Karşılaştır
             </a>
             <a href="extractor.html"
-                class="flex items-center gap-2 px-4 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition-all text-slate-300 hover:text-white text-sm font-medium shadow-md ml-2"
+                class="flex items-center gap-2 px-4 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition-all text-slate-300 hover:text-white text-sm font-medium shadow-md ml-2 whitespace-nowrap flex-shrink-0"
                 title="Kontrol Et">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -56,7 +56,7 @@
                 Kontrol
             </a>
             <button onclick="openDictionaryModal()"
-                class="flex items-center gap-2 px-4 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition-all text-slate-300 hover:text-white text-sm font-medium shadow-md ml-2"
+                class="flex items-center gap-2 px-4 h-10 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition-all text-slate-300 hover:text-white text-sm font-medium shadow-md ml-2 whitespace-nowrap flex-shrink-0"
                 title="Özel İsimler Sözlüğü">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -155,7 +155,7 @@
 
         <!-- File Sidebar -->
         <aside id="file-sidebar" style="width: 22rem;"
-            class="shrink-0 bg-slate-800/60 border-r border-slate-700 flex flex-col overflow-hidden">
+            class="shrink-0 bg-slate-800 border-r border-slate-700 flex flex-col overflow-hidden">
 
             <div class="p-3 border-b border-slate-700 flex flex-col gap-2">
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Dosyalar</p>
