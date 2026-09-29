@@ -1948,6 +1948,10 @@
 
             // Escape RegExp specials
             let escapedSearch = searchInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            
+            // Allow spaces to match any whitespace including newlines
+            escapedSearch = escapedSearch.replace(/ /g, '\\s+');
+            
             const allowSubstring = document.getElementById('batch-substring-match').checked;
 
             if (!allowSubstring) {
@@ -1968,7 +1972,7 @@
                     if (sub.text && regex.test(sub.text)) {
                         const count = (sub.text.match(regex) || []).length;
                         totalReplacements += count;
-                        sub.text = sub.text.replace(regex, replaceInput);
+                        sub.text = getOptimalSplitText(sub.text.replace(regex, replaceInput));
                         fileModified = true;
                     }
                 });
