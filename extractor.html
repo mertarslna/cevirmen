@@ -362,7 +362,7 @@
                     : lines.length;
 
                 var effectiveEnd = nextStart;
-                for (var k = nextStart - 1; k >= textStart; k--) {
+                for (var k = textStart; k < nextStart; k++) {
                     if (lines[k].trim() === '') {
                         effectiveEnd = k;
                         break;

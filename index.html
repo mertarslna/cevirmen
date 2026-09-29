@@ -496,9 +496,9 @@
                 // Everything AFTER the last blank line (before the next block start) is inter-block
                 // garbage (e.g. stray characters like "s") and should be discarded.
                 let effectiveEnd = textEnd;
-                for (let k = textEnd - 1; k >= textStart; k--) {
+                for (let k = textStart; k < textEnd; k++) {
                     if (lines[k].trim() === '') {
-                        effectiveEnd = k; // stop before this blank line (and anything after)
+                        effectiveEnd = k; // stop at the first blank line to discard any inter-block garbage
                         break;
                     }
                 }
