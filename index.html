@@ -19,7 +19,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(() => {});
+                navigator.serviceWorker.register('/sw.js').catch(() => { });
             });
         }
     </script>
@@ -224,9 +224,15 @@
         <main class="flex-1 overflow-y-auto p-6 flex flex-col relative">
 
             <!-- Top-Center Scroll to Top Button -->
-            <div class="sticky top-2 w-full flex justify-center items-start" style="z-index: 9999; min-height: 0px; height: 0px; margin: 0; padding: 0; overflow: visible;">
-                <button id="scrollToTopBtn" class="pointer-events-none bg-indigo-600/90 hover:bg-indigo-500 text-white backdrop-blur-md shadow-[0_4px_14px_rgba(79,70,229,0.4)] rounded-full px-5 py-1.5 text-xs font-semibold border border-indigo-500/50 flex items-center gap-1.5 opacity-0 -translate-y-8 transition-all duration-300 focus:outline-none hover:scale-105 flex-shrink-0" title="Sayfa Başına Dön">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7 7 7M12 3v18"/></svg>
+            <div class="sticky top-2 w-full flex justify-center items-start"
+                style="z-index: 9999; min-height: 0px; height: 0px; margin: 0; padding: 0; overflow: visible;">
+                <button id="scrollToTopBtn"
+                    class="pointer-events-none bg-indigo-600/90 hover:bg-indigo-500 text-white backdrop-blur-md shadow-[0_4px_14px_rgba(79,70,229,0.4)] rounded-full px-5 py-1.5 text-xs font-semibold border border-indigo-500/50 flex items-center gap-1.5 opacity-0 -translate-y-8 transition-all duration-300 focus:outline-none hover:scale-105 flex-shrink-0"
+                    title="Sayfa Başına Dön">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                            d="M5 10l7-7 7 7M12 3v18" />
+                    </svg>
                     Yukarı
                 </button>
             </div>
@@ -372,7 +378,7 @@
             if (e.key !== 'Escape') return;
             // Close download modal if open
             var dlModal = document.getElementById('download-modal');
-            if (dlModal && dlModal.style.display !== 'none') {
+            if (dlModal && dlModal.classList.contains('active')) {
                 closeDownloadModal();
                 return;
             }
@@ -646,16 +652,16 @@
                     return parseInt(card.id.replace('sub-card-', ''), 10);
                 }
             }
-            
+
             const container = document.getElementById('subtitles-container');
             const mainEl = document.querySelector('main');
             if (!container || !mainEl) return 0;
-            
+
             const cards = container.children;
             const mainRect = mainEl.getBoundingClientRect();
             for (let i = 0; i < cards.length; i++) {
                 const rect = cards[i].getBoundingClientRect();
-                if (rect.bottom > mainRect.top + 20) { 
+                if (rect.bottom > mainRect.top + 20) {
                     return parseInt(cards[i].id.replace('sub-card-', ''), 10) || 0;
                 }
             }
@@ -664,7 +670,7 @@
 
         function switchToFile(key) {
             if (!fileStore[key]) return;
-            
+
             let targetIndex = 0;
             if (activeFile && activeFile !== key) {
                 targetIndex = getVisibleSubtitleIndex();
@@ -1763,7 +1769,7 @@
                 content.classList.remove('scale-95', 'opacity-0');
                 content.classList.add('scale-100', 'opacity-100');
             }, 10);
-            
+
             switchToolsTab(tab);
         }
 
@@ -1891,7 +1897,7 @@
                 const btn = document.getElementById('tools-tab-' + t);
                 const panel = document.getElementById('tools-panel-' + t);
                 if (!btn || !panel) return;
-                
+
                 if (t === tab) {
                     btn.classList.add('text-indigo-400', 'border-indigo-500');
                     btn.classList.remove('text-slate-400', 'border-transparent', 'hover:text-slate-300');
@@ -1902,7 +1908,7 @@
                     panel.classList.add('hidden');
                 }
             });
-            
+
             if (tab === 'dict') {
                 setTimeout(() => document.getElementById('dict-input').focus(), 100);
             } else {
@@ -1924,7 +1930,7 @@
             const replaceInput = document.getElementById('batch-replace-input').value;
             const ignoreCase = document.getElementById('batch-ignore-case').checked;
             const resultBox = document.getElementById('batch-replace-result');
-            
+
             if (!searchInput) {
                 resultBox.className = 'text-xs font-medium mt-2 rounded p-2 bg-red-500/20 text-red-400';
                 resultBox.textContent = 'Lütfen aranacak kelimeyi girin.';
@@ -1943,7 +1949,7 @@
             // Escape RegExp specials
             let escapedSearch = searchInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const allowSubstring = document.getElementById('batch-substring-match').checked;
-            
+
             if (!allowSubstring) {
                 // Varsayılan olarak sadece tam kelime eşleşmesi (Türkçe karakter destekli)
                 escapedSearch = `(?<=^|[^\\p{L}\\p{N}_])${escapedSearch}(?=[^\\p{L}\\p{N}_]|$)`;
@@ -1976,7 +1982,7 @@
                 if (activeFile) {
                     renderSubtitles(fileStore[activeFile].subtitles);
                 }
-                
+
                 resultBox.className = 'text-xs font-medium mt-2 rounded p-2 bg-emerald-500/20 text-emerald-400';
                 resultBox.textContent = `${affectedFiles} dosyada toplam ${totalReplacements} değişiklik yapıldı.`;
             } else {
@@ -1993,7 +1999,7 @@
         class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
         <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-[400px] flex flex-col overflow-hidden transform transition-all duration-200 scale-95 opacity-0"
             id="dictionary-modal-content">
-            
+
             <!-- Header -->
             <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/80">
                 <h3 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
@@ -2016,14 +2022,18 @@
 
             <!-- Tabs -->
             <div class="flex border-b border-slate-700 bg-slate-800">
-                <button id="tools-tab-dict" onclick="switchToolsTab('dict')" class="flex-1 py-2 text-xs font-medium text-indigo-400 border-b-2 border-indigo-500 transition-colors">Sözlük</button>
-                <button id="tools-tab-batch" onclick="switchToolsTab('batch')" class="flex-1 py-2 text-xs font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-300 transition-colors">Toplu Değiştir</button>
+                <button id="tools-tab-dict" onclick="switchToolsTab('dict')"
+                    class="flex-1 py-2 text-xs font-medium text-indigo-400 border-b-2 border-indigo-500 transition-colors">Sözlük</button>
+                <button id="tools-tab-batch" onclick="switchToolsTab('batch')"
+                    class="flex-1 py-2 text-xs font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-300 transition-colors">Toplu
+                    Değiştir</button>
             </div>
 
             <!-- Panel: Dictionary -->
             <div id="tools-panel-dict" class="p-4 flex flex-col gap-4">
                 <div class="flex justify-between items-center gap-2">
-                    <p class="text-xs text-slate-400 flex-1">Buraya eklediğiniz kelimeler virgülden sonra büyük harfle başlasa dahi imla uyarısı vermez.</p>
+                    <p class="text-xs text-slate-400 flex-1">Buraya eklediğiniz kelimeler virgülden sonra büyük harfle
+                        başlasa dahi imla uyarısı vermez.</p>
                     <button id="dict-bulk-delete-btn" onclick="bulkDeleteAll()" title="Tümünü Sil" style="display:none"
                         class="flex items-center gap-1.5 text-[10px] font-medium text-red-400 hover:text-red-300 border border-red-500/40 hover:border-red-400/70 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded transition-all shrink-0">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2055,7 +2065,8 @@
                     <label class="block text-xs font-medium text-slate-400 mb-1">Aranacak Kelime</label>
                     <input type="text" id="batch-search-input"
                         class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
-                        placeholder="Örn: elma" onkeydown="if(event.key==='Enter') document.getElementById('batch-replace-input').focus()">
+                        placeholder="Örn: elma"
+                        onkeydown="if(event.key==='Enter') document.getElementById('batch-replace-input').focus()">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-400 mb-1">Yeni Kelime</label>
@@ -2064,16 +2075,20 @@
                         placeholder="Örn: armut" onkeydown="if(event.key==='Enter') executeBatchReplace()">
                 </div>
                 <div class="flex items-center gap-2 mt-1">
-                    <input type="checkbox" id="batch-ignore-case" class="w-3.5 h-3.5 bg-slate-900 border-slate-700 rounded accent-indigo-500 cursor-pointer">
-                    <label for="batch-ignore-case" class="text-xs text-slate-300 cursor-pointer select-none">Büyük/Küçük harf duyarsız</label>
+                    <input type="checkbox" id="batch-ignore-case"
+                        class="w-3.5 h-3.5 bg-slate-900 border-slate-700 rounded accent-indigo-500 cursor-pointer">
+                    <label for="batch-ignore-case" class="text-xs text-slate-300 cursor-pointer select-none">Büyük/Küçük
+                        harf duyarsız</label>
                 </div>
                 <div class="flex items-center gap-2 mt-1">
-                    <input type="checkbox" id="batch-substring-match" class="w-3.5 h-3.5 bg-slate-900 border-slate-700 rounded accent-indigo-500 cursor-pointer">
-                    <label for="batch-substring-match" class="text-xs text-slate-300 cursor-pointer select-none">Kelime parçalarını da dahil et</label>
+                    <input type="checkbox" id="batch-substring-match"
+                        class="w-3.5 h-3.5 bg-slate-900 border-slate-700 rounded accent-indigo-500 cursor-pointer">
+                    <label for="batch-substring-match" class="text-xs text-slate-300 cursor-pointer select-none">Kelime
+                        parçalarını da dahil et</label>
                 </div>
-                
+
                 <div id="batch-replace-result" class="text-xs font-medium mt-2 hidden rounded p-2"></div>
-                
+
                 <button onclick="executeBatchReplace()"
                     class="mt-2 w-full bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2 rounded-lg transition shadow-md flex justify-center items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2188,22 +2203,22 @@
 
     <!-- Scroll to Top Script -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const mainEl = document.querySelector('main');
             const scrollBtn = document.getElementById('scrollToTopBtn');
             let lastScrollTop = 0;
             let scrollUpStart = null;
-            
+
             if (mainEl && scrollBtn) {
-                mainEl.addEventListener('scroll', function() {
+                mainEl.addEventListener('scroll', function () {
                     const st = mainEl.scrollTop;
-                    
+
                     if (window.isSwitchingFile) {
                         lastScrollTop = st <= 0 ? 0 : st;
                         scrollUpStart = null;
                         return;
                     }
-                    
+
                     if (st > lastScrollTop) {
                         // Aşağı kaydırılıyor
                         scrollUpStart = null;
@@ -2214,24 +2229,24 @@
                         if (scrollUpStart === null) {
                             scrollUpStart = lastScrollTop;
                         }
-                        
+
                         // En az 150px yukarı kaydırıldıysa ve sayfanın başından yeterince uzaktaysa göster
                         if ((scrollUpStart - st) > 150 && st > 300) {
                             scrollBtn.classList.remove('opacity-0', '-translate-y-8', 'pointer-events-none');
                             scrollBtn.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
                         }
                     }
-                    
+
                     // En tepeye gelindiğinde gizle
                     if (st <= 300) {
                         scrollBtn.classList.add('opacity-0', '-translate-y-8', 'pointer-events-none');
                         scrollBtn.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
                     }
-                    
+
                     lastScrollTop = st <= 0 ? 0 : st;
                 }, { passive: true });
 
-                scrollBtn.addEventListener('click', function() {
+                scrollBtn.addEventListener('click', function () {
                     mainEl.scrollTo({ top: 0, behavior: 'smooth' });
                 });
             }
