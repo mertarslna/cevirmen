@@ -441,16 +441,13 @@
                 var fi2 = document.createElement('div'); fi2.className = 'file-item file-item-ext border border-slate-700/60 rounded-lg px-2 py-1.5 cursor-pointer flex items-center gap-1.5 group' + (isSel ? ' selected-for-merge' : '') + (isChecked ? ' checked-file' : '');
                 fi2.style.paddingLeft = ip + 'px'; fi2.style.position = 'relative';
                 var ic2 = isSel ? 'text-indigo-400' : 'text-slate-500'; var nc = isSel ? 'text-indigo-300 font-semibold' : 'text-slate-300';
-                var cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'file-select-checkbox'; cb.checked = isSel;
-                cb.addEventListener('change', function (e) { e.stopPropagation(); toggleFileSelection(node.key); });
-                fi2.appendChild(cb);
                 var checkBtnClass = isChecked ? 'text-sky-400 checked-active shrink-0 p-0.5 ml-0.5' : 'text-slate-600 shrink-0 p-0.5 ml-0.5';
                 var checkSvg = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
                 fi2.insertAdjacentHTML('beforeend', '<span class="text-xs truncate flex-1 ' + nc + '" title="' + node.fullPath + '">' + node.name.replace(/\.srt$/i, '') + '</span><span class="text-xs text-slate-500 shrink-0">' + node.subtitlesCount + '</span><button class="check-btn ' + checkBtnClass + '" data-key="' + node.key + '" title="Kontrol Edildi Olarak İşaretle">' + checkSvg + '</button><button class="del-btn text-slate-600 hover:text-red-400 shrink-0 p-0.5 ml-0.5" data-key="' + node.key + '"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>');
                 if (isSel && oi >= 0) { var badge = document.createElement('div'); badge.className = 'order-badge'; badge.textContent = oi + 1; fi2.appendChild(badge); }
                 fi2.querySelector('.check-btn').addEventListener('click', function (e) { e.stopPropagation(); toggleFileChecked(node.key); });
                 fi2.querySelector('.del-btn').addEventListener('click', function (e) { e.stopPropagation(); removeFile(node.key); });
-                fi2.addEventListener('click', function (e) { if (e.target.closest('.del-btn') || e.target.closest('.check-btn') || e.target === cb) return; toggleFileSelection(node.key); });
+                fi2.addEventListener('click', function (e) { if (e.target.closest('.del-btn') || e.target.closest('.check-btn')) return; toggleFileSelection(node.key); });
                 par.appendChild(fi2);
             }
         }
@@ -535,7 +532,7 @@
             con.classList.remove('hidden'); items.innerHTML = '';
             ok.forEach(function (k, i) {
                 var s = document.createElement('span'); s.className = 'flex items-center gap-1 text-xs bg-slate-900 border border-slate-700 rounded-full px-2.5 py-1 text-slate-300';
-                s.innerHTML = '<span class="w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center shrink-0">' + (i + 1) + '</span><span class="truncate max-w-[120px]" title="' + k + '">' + fileStore[k].name + '</span>';
+                s.innerHTML = '<span class="w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center shrink-0">' + (i + 1) + '</span><span class="truncate max-w-[120px]" title="' + k + '">' + fileStore[k].name.replace(/\\.srt$/i, '') + '</span>';
                 items.appendChild(s);
             });
         }
@@ -573,7 +570,7 @@
             var fc = document.getElementById('ai-merge-files'); fc.innerHTML = '';
             currentMergeFiles.forEach(function (name, i) {
                 var s = document.createElement('span'); s.className = 'flex items-center gap-1 text-xs bg-slate-800 border border-slate-700 rounded-full px-2 py-0.5 text-slate-400';
-                s.innerHTML = '<span class="text-[9px] w-4 h-4 rounded-full bg-indigo-600/50 text-indigo-300 font-bold flex items-center justify-center">' + (i + 1) + '</span><span class="max-w-[120px] truncate" title="' + escapeHTML(name) + '">' + escapeHTML(name) + '</span>';
+                s.innerHTML = '<span class="text-[9px] w-4 h-4 rounded-full bg-indigo-600/50 text-indigo-300 font-bold flex items-center justify-center">' + (i + 1) + '</span><span class="max-w-[120px] truncate" title="' + escapeHTML(name) + '">' + escapeHTML(name.replace(/\\.srt$/i, '')) + '</span>';
                 fc.appendChild(s);
             });
         }
@@ -606,7 +603,7 @@
                 var item = document.createElement('div'); item.className = 'history-item approved';
                 var ds = new Date(entry.date).toLocaleString('tr-TR');
                 item.innerHTML = '<div class="flex items-start justify-between gap-2 mb-2"><div class="flex items-center gap-2"><div class="dot-pulse"></div><span class="text-xs font-semibold text-emerald-300">Onaylandi</span><span class="text-xs text-slate-500">' + ds + '</span></div><div class="flex items-center gap-1"><button onclick="reloadHistoryEntry(' + idx + ')" class="text-xs text-indigo-400 hover:text-indigo-300 transition px-2 py-1 rounded hover:bg-indigo-900/30"><svg class="w-3.5 h-3.5 inline mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>Yeniden Ac</button><button onclick="deleteHistoryEntry(' + idx + ')" class="text-xs text-red-400/70 hover:text-red-400 transition p-1 rounded hover:bg-red-900/20"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div></div>' +
-                    '<div class="flex flex-wrap gap-1 mb-2">' + entry.files.map(function (f, i) { return '<span class="text-[10px] bg-slate-800 border border-slate-700 rounded-full px-2 py-0.5 text-slate-400 flex items-center gap-1"><span class="text-[8px] w-3.5 h-3.5 rounded-full bg-indigo-600/40 text-indigo-300 font-bold flex items-center justify-center">' + (i + 1) + '</span>' + escapeHTML(f) + '</span>'; }).join('') + '</div>' +
+                    '<div class="flex flex-wrap gap-1 mb-2">' + entry.files.map(function (f, i) { return '<span class="text-[10px] bg-slate-800 border border-slate-700 rounded-full px-2 py-0.5 text-slate-400 flex items-center gap-1"><span class="text-[8px] w-3.5 h-3.5 rounded-full bg-indigo-600/40 text-indigo-300 font-bold flex items-center justify-center">' + (i + 1) + '</span>' + escapeHTML(f.replace(/\\.srt$/i, '')) + '</span>'; }).join('') + '</div>' +
                     '<span class="text-[10px] text-slate-600 font-mono bg-slate-900 px-2 py-0.5 rounded inline-block mb-2">ID: ' + entry.key + '</span>' +
                     '<div class="bg-slate-900/50 border border-slate-700/50 rounded-lg p-2.5"><span class="text-violet-400 font-semibold text-[10px] uppercase tracking-wider block mb-1">AI Yaniti Onizleme</span><p class="text-xs text-slate-300 leading-relaxed line-clamp-3">' + escapeHTML(entry.preview) + (entry.aiResponse.length > 150 ? '...' : '') + '</p></div>';
                 list.appendChild(item);
