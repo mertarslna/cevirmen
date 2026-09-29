@@ -1103,6 +1103,22 @@
                     }
                 }
             }
+            // C. Son satır noktalama kontrolü
+            if (lines.length > 0) {
+                const lastLine = lines[lines.length - 1].trim();
+                if (lastLine.length > 0) {
+                    const lastChar = lastLine.slice(-1);
+                    if (/[a-zA-ZçğıöşüÇĞİÖŞÜ0-9]/.test(lastChar)) {
+                        issues.push({
+                            message: `Altyazı bloğunun son satırı noktalama işareti olmadan bitmiş.`
+                        });
+                    } else if (!/[.!?…]/.test(lastChar)) {
+                        issues.push({
+                            message: `Altyazı bloğunun son satırı uygun bir noktalama işareti (. ? ! ...) ile bitmemiş.`
+                        });
+                    }
+                }
+            }
 
             // Deduplicate by message string
             const uniqueMap = new Map();
