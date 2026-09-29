@@ -911,7 +911,7 @@
         }
 
         // ── GRAMMAR & PUNCTUATION CHECKER ─────────────────────────────────
-        function checkGrammarIssues(text, crossBlockWarning) {
+        function checkGrammarIssues(text, crossBlockWarning, isLastBlock = false) {
             const issues = [];
 
             if (crossBlockWarning) {
@@ -1104,7 +1104,7 @@
                 }
             }
             // C. Son satır noktalama kontrolü
-            if (lines.length > 0) {
+            if (isLastBlock && lines.length > 0) {
                 const lastLine = lines[lines.length - 1].trim();
                 if (lastLine.length > 0) {
                     const lastChar = lastLine.slice(-1);
@@ -1126,8 +1126,8 @@
             return Array.from(uniqueMap.values());
         }
 
-        function generateGrammarWarningsHTML(text, crossBlockWarning) {
-            const issues = checkGrammarIssues(text, crossBlockWarning);
+        function generateGrammarWarningsHTML(text, crossBlockWarning, isLastBlock = false) {
+            const issues = checkGrammarIssues(text, crossBlockWarning, isLastBlock);
             if (issues.length === 0) return '';
 
             const itemsHTML = issues.map(iss =>
@@ -1250,7 +1250,7 @@
                     '<p id="suggestion-text-' + idx + '" class="text-sm text-violet-200 italic pl-2">' + escapeHTML(sub.suggestion) + '</p>' +
                     '</div>' +
                     // Grammar warnings
-                    '<div id="grammar-box-' + idx + '" class="mt-3">' + generateGrammarWarningsHTML(sub.text, crossWarnings[idx]) + '</div>' +
+                    '<div id="grammar-box-' + idx + '" class="mt-3">' + generateGrammarWarningsHTML(sub.text, crossWarnings[idx], idx === subtitles.length - 1) + '</div>' +
                     // ── STATS ROW ──
                     '<div id="line-stats-' + idx + '" class="mt-3">' +
                     generateLineStatsHTML(sub.text.split('\n'), idx) +
@@ -1336,12 +1336,12 @@
 
             const crossWarnings = checkCrossBlockWarnings(subs);
             document.getElementById('grammar-box-' + index).innerHTML =
-                generateGrammarWarningsHTML(text, crossWarnings[index]);
+                generateGrammarWarningsHTML(text, crossWarnings[index], index === subs.length - 1);
 
             if (index + 1 < subs.length) {
                 const nextBox = document.getElementById('grammar-box-' + (index + 1));
                 if (nextBox) {
-                    nextBox.innerHTML = generateGrammarWarningsHTML(subs[index + 1].text, crossWarnings[index + 1]);
+                    nextBox.innerHTML = generateGrammarWarningsHTML(subs[index + 1].text, crossWarnings[index + 1], (index + 1) === subs.length - 1);
                 }
             }
 
@@ -1488,7 +1488,7 @@
                     }
                 });
 
-                const grammarIssues = checkGrammarIssues(sub.text, crossWarnings[idx]);
+                const grammarIssues = checkGrammarIssues(sub.text, crossWarnings[idx], idx === subs.length - 1);
                 if (grammarIssues.length > 0) {
                     grammarWarningsCount += grammarIssues.length;
                 }
