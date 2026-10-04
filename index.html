@@ -898,14 +898,26 @@
             }
         }
 
-        function isWordAllowed(word) {
+        function isWordAllowed(word, contextText = "") {
             if (typeof customDictionary === 'undefined') return false;
-            const targetWord = word.toLowerCase();
+            const targetWord = word.toLocaleLowerCase('tr-TR');
             const strippedWord = targetWord.split(/['’´]/)[0];
+            const contextLower = contextText.toLocaleLowerCase('tr-TR');
+            
             return customDictionary.some(w => {
-                const dictWord = w.toLowerCase();
+                const dictWord = w.toLocaleLowerCase('tr-TR');
                 if (strippedWord === dictWord) return true;
                 if (dictWord.length >= 3 && targetWord.startsWith(dictWord)) return true;
+                
+                const dictParts = dictWord.split(/\s+/);
+                if (dictParts.length > 1) {
+                    if (contextLower.includes(dictWord)) {
+                        return dictParts.some(part => 
+                            strippedWord === part || (part.length >= 3 && targetWord.startsWith(part))
+                        );
+                    }
+                }
+                
                 return false;
             });
         }
@@ -962,7 +974,7 @@
                     const punct = match[1];
                     const wordAfterPunct = match[2].replace(/[.,;:!?]+$/, '');
 
-                    const isAllowed = isWordAllowed(wordAfterPunct);
+                    const isAllowed = isWordAllowed(wordAfterPunct, text);
 
                     if (!isAllowed) {
                         const snippetStart = Math.max(0, match.index - 12);
@@ -1047,7 +1059,7 @@
 
                         // Sözlük izni var mı?
                         const cleanWord = word.replace(/[.,;:!?]+$/, '');
-                        if (isWordAllowed(cleanWord)) continue;
+                        if (isWordAllowed(cleanWord, text)) continue;
 
                         // Bağlam snippet'i: önceki 1-2 kelime + bu kelime
                         const snippetWords = parts.slice(Math.max(0, p - 2), p + 2).join(' ');
@@ -1082,7 +1094,7 @@
                 // Satır sonu virgül (, ;) + Alt konuşma satırı büyük harf
                 if (/[,;]/.test(lastCharCurr) && /[A-ZÇĞİÖŞÜ]/.test(firstCharNext)) {
                     const firstWordNextLine = cleanedNext.split(/\s+/)[0].replace(/[.,;:!?]+$/, '');
-                    const isAllowed = isWordAllowed(firstWordNextLine);
+                    const isAllowed = isWordAllowed(firstWordNextLine, text);
 
                     if (!isAllowed) {
                         issues.push({
@@ -1094,7 +1106,7 @@
                 // Satır sonu noktalama olmadan + Alt konuşma satırı büyük harf
                 if (!/[.!?,;:]/.test(lastCharCurr) && /[A-ZÇĞİÖŞÜ]/.test(firstCharNext)) {
                     const firstWordNextLine = cleanedNext.split(/\s+/)[0].replace(/[.,;:!?]+$/, '');
-                    const isAllowed = isWordAllowed(firstWordNextLine);
+                    const isAllowed = isWordAllowed(firstWordNextLine, text);
 
                     if (!isAllowed) {
                         issues.push({
@@ -1165,7 +1177,7 @@
                     warnings[i + 1] = `Bir önceki altyazı bloğu (#${subtitles[i].index}) noktalama işareti (${lastCharCurr}) ile bittiği halde bu blok küçük harfle başlamış.`;
                 } else if (/[,;]/.test(lastCharCurr) && /[A-ZÇĞİÖŞÜ]/.test(firstCharNext)) {
                     const firstWordNextLine = cleanedNext.split(/\s+/)[0].replace(/[.,;:!?]+$/, '');
-                    const isAllowed = isWordAllowed(firstWordNextLine);
+                    const isAllowed = isWordAllowed(firstWordNextLine, nextText);
 
                     if (!isAllowed) {
                         warnings[i + 1] = `Bir önceki altyazı bloğu (#${subtitles[i].index}) virgül (${lastCharCurr}) ile bittiği halde bu blok büyük harfle başlamış.`;
@@ -1173,7 +1185,7 @@
                 } else if (!/[.!?,;:]/.test(lastCharCurr) && /[A-ZÇĞİÖŞÜ]/.test(firstCharNext)) {
                     // Nokta (. ! ?) olmadan biten blok + büyük harfle başlayan sonraki blok
                     const firstWordNextLine = cleanedNext.split(/\s+/)[0].replace(/[.,;:!?]+$/, '');
-                    const isAllowed = isWordAllowed(firstWordNextLine);
+                    const isAllowed = isWordAllowed(firstWordNextLine, nextText);
 
                     if (!isAllowed) {
                         warnings[i + 1] = `Bir önceki altyazı bloğu (#${subtitles[i].index}) nokta (. ! ?) olmadan bittiği halde bu blok büyük harfle başlamış: "${currText.slice(-20)}" ➤ "${cleanedNext.slice(0, 20)}"`;
