@@ -1811,8 +1811,8 @@
             // Show/hide bulk delete button based on word count
             const bulkBtn = document.getElementById('dict-bulk-delete-btn');
             if (bulkBtn) {
-                if (customDictionary.length === 0) bulkBtn.classList.add('hidden');
-                else bulkBtn.classList.remove('hidden');
+                if (customDictionary.length === 0) bulkBtn.style.display = 'none';
+                else bulkBtn.style.display = 'flex';
             }
             if (customDictionary.length === 0) {
                 list.innerHTML = '<p class="text-xs text-slate-500 text-center mt-6">Henüz kelime eklenmemiş.</p>';
@@ -1850,45 +1850,13 @@
         }
 
         // ── BULK DELETE ──────────────────────────────────────────────────────
-        function showBulkOverlay(id) {
-            const overlay = document.getElementById(id);
-            const content = document.getElementById(id + '-content');
-            overlay.classList.remove('hidden');
-            overlay.classList.add('active');
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    if (content) content.classList.add('show');
-                });
-            });
-        }
-
-        function hideBulkOverlay(id, callback) {
-            const overlay = document.getElementById(id);
-            const content = document.getElementById(id + '-content');
-            if (content) content.classList.remove('show');
-            setTimeout(() => {
-                overlay.classList.remove('active');
-                overlay.classList.add('hidden');
-                if (callback) callback();
-            }, 200);
-        }
-
         function bulkDeleteAll() {
             if (customDictionary.length === 0) return;
-            document.getElementById('bulk-confirm-count').textContent = customDictionary.length;
-            showBulkOverlay('bulk-confirm-1');
-        }
-
-        function closeBulkConfirm1() {
-            hideBulkOverlay('bulk-confirm-1');
-        }
-
-        function finalBulkDelete() {
-            hideBulkOverlay('bulk-confirm-1', () => {
+            if (confirm(`Sözlükteki ${customDictionary.length} kelimeyi kalıcı olarak silmek istiyor musunuz?`)) {
                 customDictionary = [];
                 saveDictionary();
                 renderDictionary();
-            });
+            }
         }
 
         // Initial load
@@ -2055,12 +2023,12 @@
                     <p class="text-xs text-slate-400 flex-1">Buraya eklediğiniz kelimeler virgülden sonra büyük harfle
                         başlasa dahi imla uyarısı vermez.</p>
                     <button id="dict-bulk-delete-btn" onclick="bulkDeleteAll()" title="Tümünü Sil" style="display:none"
-                        class="flex items-center gap-1.5 text-[10px] font-medium text-red-400 hover:text-red-300 border border-red-500/40 hover:border-red-400/70 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded transition-all shrink-0">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="flex items-center gap-1.5 text-[10px] font-medium text-red-400 hover:text-red-300 border border-red-500/40 hover:border-red-400/70 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded transition-all shrink-0 w-max">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 12px; height: 12px; min-width: 12px; flex-shrink: 0;">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
-                        Tümünü Sil
+                        <span style="white-space: nowrap;">Tümünü Sil</span>
                     </button>
                 </div>
                 <div class="flex gap-2">
@@ -2193,33 +2161,7 @@
     </div>
 
     <!-- Bulk Delete - First Confirmation -->
-    <div id="bulk-confirm-1" class="modal-overlay hidden">
-        <div id="bulk-confirm-1-content" class="modal-card">
-            <!-- Header -->
-            <div class="modal-header bg-red">
-                <svg class="modal-title-icon text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                </svg>
-                <span class="modal-title">Tümünü Sil &mdash; Onay</span>
-            </div>
-            <!-- Body -->
-            <div class="modal-body !flex">
-                <p class="modal-desc-margin">
-                    Sözlükteki <span class="font-bold text-slate-200" id="bulk-confirm-count">0</span> kelimeyi
-                    kalıcı olarak silmek istiyor musunuz?
-                </p>
-                <div class="modal-footer gap-2">
-                    <button onclick="closeBulkConfirm1()" class="modal-btn-secondary">
-                        Vazgeç
-                    </button>
-                    <button onclick="finalBulkDelete()" class="modal-btn-danger">
-                        Evet, Sil
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Scroll to Top Script -->
     <script>
