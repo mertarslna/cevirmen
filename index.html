@@ -907,13 +907,12 @@
             return customDictionary.some(w => {
                 const dictWord = w.toLocaleLowerCase('tr-TR');
                 if (strippedWord === dictWord) return true;
-                if (dictWord.length >= 3 && targetWord.startsWith(dictWord)) return true;
                 
                 const dictParts = dictWord.split(/\s+/);
                 if (dictParts.length > 1) {
                     if (contextLower.includes(dictWord)) {
                         return dictParts.some(part => 
-                            strippedWord === part || (part.length >= 3 && targetWord.startsWith(part))
+                            strippedWord === part
                         );
                     }
                 }
